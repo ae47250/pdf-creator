@@ -25,6 +25,7 @@ Other service variables:
 
 ```text
 PDF_CREATION_CONSOLE_ENABLED
+PDF_CREATION_CONSOLE_PASSWORD
 PDF_CREATION_R2_ACCOUNT_ID
 PDF_CREATION_R2_BUCKET_NAME
 PDF_CREATION_R2_ACCESS_KEY_ID
@@ -52,7 +53,8 @@ The service checks all configured current and previous digests without an early 
 - Production callers: 10 render requests per minute. Test caller: 30 per minute. The SDK key is the authenticated caller ID.
 - A missing Vercel firewall rule fails closed in Vercel. Local development skips the external firewall check.
 - Keep the testing console disabled in production by omitting `PDF_CREATION_CONSOLE_ENABLED` or setting it to `false`.
-- Protected previews may set it to `true`; the browser never receives `PDF_CREATION_TEST`.
+- To enable it in production, set both `PDF_CREATION_CONSOLE_ENABLED=true` and a sensitive `PDF_CREATION_CONSOLE_PASSWORD`. The password gate issues an eight-hour secure, HTTP-only session cookie; neither this password nor `PDF_CREATION_TEST` reaches browser code.
+- Protected previews may set it to `true` without the production password gate.
 - Exclude `/reports/*` from production Deployment Protection. Possession of an unguessable report URL grants access until manifest expiry.
 
 After a production build, inspect `.next/server/app/api/v1/pdfs` and its trace. If the uncompressed traced creation function exceeds 230 MB or Vercel rejects it, use only the approved fallback: `@sparticuz/chromium-min@149.0.0` with the exact x64 pack in private nearby R2 and verify its checksum. Do not use a latest or public GitHub pack URL.

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { isConsoleEnabled } from '@/lib/console-auth';
 import packageJson from '@/package.json';
 import { authenticateBearer } from '@/lib/pdf/auth';
 import { errorResponse } from '@/lib/pdf/errors';
@@ -28,7 +29,7 @@ export function GET(request: Request): Response {
       runtime: { arch: process.arch, platform: process.platform },
       configuration: {
         storageReady: r2Names.every((name) => Boolean(process.env[name])),
-        consoleEnabled: process.env.NODE_ENV !== 'production' || process.env.PDF_CREATION_CONSOLE_ENABLED === 'true',
+        consoleEnabled: isConsoleEnabled(),
         chromeOverride: Boolean(process.env.CHROME_PATH)
       }
     }, { headers: { 'Cache-Control': 'no-store', 'X-Request-Id': requestId } });
