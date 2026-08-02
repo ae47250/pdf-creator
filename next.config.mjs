@@ -1,8 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
+  allowedDevOrigins: ['127.0.0.1'],
+  serverExternalPackages: [
+    '@aws-sdk/client-s3',
+    '@sparticuz/chromium',
+    'puppeteer-core'
+  ],
   outputFileTracingIncludes: {
-    '/api/pdf': ['./node_modules/@sparticuz/chromium/bin/**/*']
+    '/': ['./tests/fixtures/app-a-baseline.html'],
+    '/api/v1/pdfs': ['./node_modules/@sparticuz/chromium/bin/**/*'],
+    '/api/console/pdfs': ['./node_modules/@sparticuz/chromium/bin/**/*']
   }
 };
 

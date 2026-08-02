@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pdf-creator.urveska.com/contracts/manifest.schema.json",
+  "title": "Stored PDF manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "reportId", "caller", "filename", "createdAt", "expiresAt", "pdf", "submittedHtmlBytes", "submittedHtmlSha256", "renderedHtmlSha256", "page", "pageCount", "pageDimensions", "metadata", "versions", "requestHash"],
+  "properties": {
+    "version": { "const": 1 },
+    "reportId": { "type": "string", "pattern": "^r(1|7|30)_[0-9a-f-]{36}$" },
+    "caller": { "type": "string", "minLength": 1 },
+    "filename": { "type": "string", "minLength": 5, "maxLength": 120 },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "pdf": { "$ref": "#/$defs/object" },
+    "html": { "$ref": "#/$defs/object" },
+    "submittedHtmlBytes": { "type": "integer", "minimum": 1, "maximum": 3500000 },
+    "submittedHtmlSha256": { "$ref": "#/$defs/sha" },
+    "renderedHtmlSha256": { "$ref": "#/$defs/sha" },
+    "page": { "type": "object" },
+    "pageCount": { "type": "integer", "minimum": 1, "maximum": 25 },
+    "pageDimensions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["widthPoints", "heightPoints"],
+        "properties": {
+          "widthPoints": { "type": "number" },
+          "heightPoints": { "type": "number" }
+        }
+      }
+    },
+    "metadata": { "type": "object" },
+    "versions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["service", "node", "puppeteer", "chromium"],
+      "properties": {
+        "service": { "type": "string" },
+        "node": { "type": "string" },
+        "puppeteer": { "type": "string" },
+        "chromium": { "type": "string" }
+      }
+    },
+    "requestHash": { "$ref": "#/$defs/sha" },
+    "idempotencyHash": { "$ref": "#/$defs/sha" }
+  },
+  "$defs": {
+    "sha": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "object": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "contentType", "bytes", "sha256"],
+      "properties": {
+        "key": { "type": "string" },
+        "contentType": { "type": "string" },
+        "bytes": { "type": "integer", "minimum": 1 },
+        "sha256": { "$ref": "#/$defs/sha" }
+      }
+    }
+  }
+}

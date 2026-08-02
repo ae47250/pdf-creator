@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pdf-creator.urveska.com/contracts/pdf-creation.schema.json",
+  "title": "PDF creation request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["html", "filename", "storeResult", "page"],
+  "properties": {
+    "html": { "type": "string", "minLength": 1 },
+    "filename": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 120,
+      "pattern": "^(?!.*\\.\\.)(?=.{1,120}$)[A-Za-z0-9][A-Za-z0-9 ._-]*\\.pdf$"
+    },
+    "storeResult": { "type": "boolean" },
+    "storeHtml": { "type": "boolean" },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "orientation", "marginsInches"],
+      "properties": {
+        "format": { "enum": ["Letter", "A4", "Legal"] },
+        "orientation": { "enum": ["portrait", "landscape"] },
+        "marginsInches": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["top", "right", "bottom", "left"],
+          "properties": {
+            "top": { "type": "number", "minimum": 0, "maximum": 2 },
+            "right": { "type": "number", "minimum": 0, "maximum": 2 },
+            "bottom": { "type": "number", "minimum": 0, "maximum": 2 },
+            "left": { "type": "number", "minimum": 0, "maximum": 2 }
+          }
+        }
+      }
+    },
+    "expectedPageCount": { "type": "integer", "minimum": 1, "maximum": 25 },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string", "maxLength": 200 },
+        "author": { "type": "string", "maxLength": 200 },
+        "subject": { "type": "string", "maxLength": 500 },
+        "keywords": {
+          "type": "array",
+          "maxItems": 20,
+          "items": { "type": "string", "maxLength": 80 }
+        }
+      }
+    },
+    "retentionDays": { "enum": [1, 7, 30], "default": 30 },
+    "idempotencyKey": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+    "correlationId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "storeResult": { "const": false } }, "required": ["storeResult"] },
+      "then": {
+        "properties": { "storeHtml": { "const": false } },
+        "not": {
+          "anyOf": [
+            { "properties": { "retentionDays": {} }, "required": ["retentionDays"] },
+            { "properties": { "idempotencyKey": {} }, "required": ["idempotencyKey"] }
+          ]
+        }
+      }
+    }
+  ]
+}

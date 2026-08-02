@@ -1,0 +1,90 @@
+openapi: 3.1.2
+info:
+  title: PDF Creation Service
+  version: 1.0.0
+  description: Authenticated conversion of completed, self-contained HTML into validated PDFs.
+paths:
+  /api/v1/pdfs:
+    post:
+      operationId: createPdf
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./pdf-creation.schema.json
+      responses:
+        "200":
+          description: Direct PDF or stored-result receipt.
+          content:
+            application/pdf:
+              schema: { type: string, contentMediaType: application/pdf }
+            application/json:
+              schema: { $ref: "#/components/schemas/StoredResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "413": { $ref: "#/components/responses/Error" }
+        "415": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+        "500": { $ref: "#/components/responses/Error" }
+        "502": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
+        "504": { $ref: "#/components/responses/Error" }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  responses:
+    Error:
+      description: Controlled service error.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message, requestId, details]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            requestId: { type: string, format: uuid }
+            correlationId: { type: string }
+            details: { type: array, items: {} }
+    StoredResponse:
+      type: object
+      required: [status, requestId, reportId, caller, filename, createdAt, expiresAt, durationMs, htmlBytes, pdfBytes, pageCount, pageDimensions, sha256, storage, links]
+      properties:
+        status: { const: complete }
+        requestId: { type: string, format: uuid }
+        reportId: { type: string }
+        caller: { type: string }
+        correlationId: { type: string }
+        filename: { type: string }
+        createdAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        durationMs: { type: integer }
+        htmlBytes: { type: integer }
+        pdfBytes: { type: integer }
+        pageCount: { type: integer }
+        pageDimensions:
+          type: array
+          items:
+            type: object
+            properties:
+              widthPoints: { type: number }
+              heightPoints: { type: number }
+        sha256: { type: string }
+        storage: { type: object }
+        links: { type: object }

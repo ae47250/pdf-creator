@@ -1,83 +1,60 @@
-# Mr. Lombardi PDF Demo
+# PDF Creation Service
 
-Minimal GitHub/Vercel-ready Next.js App Router demo for converting generated HTML into a PDF using `puppeteer-core` plus `@sparticuz/chromium`.
+An authenticated, application-neutral Next.js service that converts completed self-contained HTML into validated PDFs. It supports normal browser pagination and automatically switches to isolated one-page-per-marker rendering when `data-pdf-page` elements are present.
 
-This version has a Mr. Lombardi drummer-themed browser page and generated PDF.
+The service does not own application templates, business data, report calculations, CSS, fonts, images, or expected visual appearance. It does not fetch URLs or external assets.
 
-## What it does
+## Local setup
 
-1. Opens a simple web page at `/`.
-2. Shows a green **MR. LOMBARDI** banner.
-3. Displays the Icelandic heading: `Hér er texti sem ég þarf að breyta í PDF-snið.`
-4. Lets the user type text into a textarea.
-5. Shows three full drum-set image assets from the `public/` folder.
-6. Sends the text to `/api/pdf` when the user clicks **Create PDF**.
-7. Builds a simple Mr. Lombardi PDF HTML document with the same drum-set assets.
-8. Converts the HTML to PDF with Puppeteer Core and Sparticuz Chromium.
-9. Returns the PDF directly as `application/pdf`.
-10. The frontend opens the returned PDF in a new browser tab.
-11. If the API fails, it returns JSON with an error message and the frontend displays it.
+Requirements: Node.js 24 and a local Chrome or Edge installation. `CHROME_PATH` can select a specific executable.
 
-## Directory structure
-
-```text
-Apdf-demo/
-├─ package.json
-├─ next.config.mjs
-├─ README.md
-├─ .gitignore
-├─ app/
-│  ├─ layout.js
-│  ├─ page.js
-│  └─ api/
-│     └─ pdf/
-│        └─ route.js
-└─ public/
-   ├─ alpha-logo.png
-   ├─ drum-set-1.svg
-   ├─ drum-set-2.svg
-   └─ drum-set-3.svg
+```powershell
+npm.cmd ci
+$env:PDF_CREATION_TEST = '<43-character-base64url-key>'
+npm.cmd run dev
 ```
 
-The extracted project uses this directory structure. Codex can infer the structure from the folders and from this README.
+Open `http://localhost:3000`. Development enables the internal console automatically. Stored mode also requires the private R2 variables described in [Operations](docs/OPERATIONS.md).
 
-## Important files
+## API
 
-- `app/page.js` controls the browser user interface.
-- `app/api/pdf/route.js` controls the generated PDF HTML/CSS and Puppeteer conversion.
-- `public/drum-set-1.svg`, `public/drum-set-2.svg`, and `public/drum-set-3.svg` are used by both the browser page and the generated PDF.
+`POST /api/v1/pdfs` requires `Content-Type: application/json` and `Authorization: Bearer <application-key>`. The request schema is [contracts/pdf-creation.schema.json](contracts/pdf-creation.schema.json), and the OpenAPI description is [contracts/openapi.yaml](contracts/openapi.yaml).
 
-## Local test
+Minimal server-side example:
 
-```bash
-npm install
-npm run dev
+```js
+const response = await fetch(`${process.env.PDF_CREATION_API_URL}/api/v1/pdfs`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${process.env.PDF_CREATION_API_KEY}`
+  },
+  body: JSON.stringify({
+    html: '<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Arial}</style></head><body><h1>Example</h1></body></html>',
+    filename: 'Example.pdf',
+    storeResult: false,
+    page: {
+      format: 'Letter',
+      orientation: 'portrait',
+      marginsInches: { top: 0.5, right: 0.5, bottom: 0.5, left: 0.5 }
+    },
+    expectedPageCount: 1
+  })
+});
+
+if (!response.ok) throw new Error(JSON.stringify(await response.json()));
+const pdf = Buffer.from(await response.arrayBuffer());
 ```
 
-Then open:
+## Verification
 
-```text
-http://localhost:3000
+```powershell
+npm.cmd run typecheck
+npm.cmd run lint
+npm.cmd test
+npm.cmd run build
 ```
 
-Type text, click **Create PDF**, and confirm the PDF opens in a new tab.
+The test suite includes real local-Chrome PDF integration checks. No production deployment, R2 lifecycle rule, firewall rule, or environment variable is created by this repository.
 
-## API-only smoke test
-
-With the dev server running:
-
-```bash
-curl -X POST http://localhost:3000/api/pdf \
-  -H "Content-Type: application/json" \
-  -d '{"text":"hello hello"}' \
-  --output mr-lombardi-test.pdf \
-  --dump-header mr-lombardi-test-headers.txt
-```
-
-Expected result: `mr-lombardi-test.pdf` is created and the response headers include `Content-Type: application/pdf`.
-
-## Vercel notes
-
-This demo uses the Next.js App Router and forces the API route to run in the Node.js runtime because Puppeteer/Chromium cannot run in the Edge runtime.
-
-If Vercel deployment fails, the most likely area to debug is Chromium startup inside `app/api/pdf/route.js`.
+See [Operations](docs/OPERATIONS.md) for configuration and incident procedures and [Migration](docs/MIGRATION.md) for application rollout boundaries.
