@@ -15,7 +15,7 @@ const request = {
   retentionDays: 30 as const,
   page: { format: 'Letter' as const, orientation: 'portrait' as const, marginsInches: { top: 0, right: 0, bottom: 0, left: 0 } }
 };
-const caller = { id: 'test', mayStore: true, maxRetentionDays: 30 as const, rateLimitPerMinute: 30 };
+const caller = { id: 'econplanner', mayStore: true, maxRetentionDays: 30 as const, rateLimitPerMinute: 10 };
 const render = {
   pdf: new Uint8Array([37, 80, 68, 70, 45, 1]),
   renderedHtml: request.html,
@@ -33,6 +33,8 @@ describe('manifest-last report storage', () => {
     const result = await storeReport(request, caller, render, 'b'.repeat(64));
     expect(result.manifest.submittedHtmlBytes).toBe(Buffer.byteLength(request.html));
     expect(storage.putObject).toHaveBeenCalledTimes(3);
+    expect(storage.putObject.mock.calls[0][0]).toMatch(/^EconPlanner\/reports\/retention-30\/.+\/report\.pdf$/);
+    expect(storage.putObject.mock.calls[1][0]).toMatch(/^EconPlanner\/reports\/retention-30\/.+\/rendered\.html$/);
     expect(storage.putObject.mock.calls[2][0]).toMatch(/manifest\.json$/);
     expect(storage.putObject.mock.calls[2][3]).toEqual({ IfNoneMatch: '*' });
   });

@@ -5,6 +5,7 @@ import { sha256 } from '@/lib/pdf/pdf-quality';
 import type { Caller, PdfCreationRequest, RenderResult, RetentionDays } from '@/lib/pdf/types';
 import { claimIdempotency, idempotencyHash } from './idempotency';
 import { parseManifest, reportLocation, type ReportManifest } from './manifest';
+import { callerStoragePrefix } from './prefixes';
 import { deleteObjects, getObject, putObject } from './r2';
 
 export interface StoredReport {
@@ -22,10 +23,11 @@ export async function storeReport(
   const uuid = randomUUID();
   const reportId = `r${retentionDays}_${uuid}`;
   const location = reportLocation(reportId)!;
+  const artifactPrefix = `${callerStoragePrefix(caller.id)}/${location.prefix}`;
   const createdAt = new Date();
   const expiresAt = new Date(createdAt.getTime() + retentionDays * 86_400_000);
-  const pdfKey = `${location.prefix}/report.pdf`;
-  const htmlKey = `${location.prefix}/rendered.html`;
+  const pdfKey = `${artifactPrefix}/report.pdf`;
+  const htmlKey = `${artifactPrefix}/rendered.html`;
   const manifestKey = `${location.prefix}/manifest.json`;
   const attempted = [pdfKey, ...(request.storeHtml ? [htmlKey] : [])];
   const renderedHtmlBytes = Buffer.from(render.renderedHtml, 'utf8');

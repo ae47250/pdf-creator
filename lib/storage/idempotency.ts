@@ -1,6 +1,7 @@
 import { PdfServiceError } from '@/lib/pdf/errors';
 import { sha256 } from '@/lib/pdf/pdf-quality';
 import { deleteObject, getObject, isPreconditionFailure, putObject } from './r2';
+import { callerStoragePrefix } from './prefixes';
 
 interface Mapping { requestHash: string; reportId: string; expiresAt: string }
 
@@ -44,7 +45,7 @@ export async function claimIdempotency(
 }
 
 function mappingKey(caller: string, key: string): string {
-  return `idempotency/${caller}/${idempotencyHash(caller, key)}.json`;
+  return `${callerStoragePrefix(caller)}/idempotency/${idempotencyHash(caller, key)}.json`;
 }
 
 async function readMapping(key: string): Promise<{ mapping: Mapping; eTag?: string } | null> {

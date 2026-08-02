@@ -66,6 +66,17 @@ describe('idempotency records', () => {
     });
     storage.deleteObject.mockResolvedValue(undefined);
     await expect(findIdempotentReport('test', 'safe:key', mapping.requestHash)).resolves.toBeNull();
-    expect(storage.deleteObject).toHaveBeenCalledWith(expect.stringMatching(/^idempotency\/test\//), 'stale-etag');
+    expect(storage.deleteObject).toHaveBeenCalledWith(expect.stringMatching(/^Test\/idempotency\//), 'stale-etag');
+  });
+
+  it('stores EconPlanner retry records under the EconPlanner prefix', async () => {
+    storage.putObject.mockResolvedValue(undefined);
+    await expect(claimIdempotency('econplanner', 'safe:key', mapping)).resolves.toEqual({ won: true });
+    expect(storage.putObject).toHaveBeenCalledWith(
+      expect.stringMatching(/^EconPlanner\/idempotency\/[0-9a-f]{64}\.json$/),
+      expect.any(String),
+      'application/json',
+      { IfNoneMatch: '*' }
+    );
   });
 });
