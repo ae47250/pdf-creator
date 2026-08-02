@@ -2,7 +2,9 @@ import { expect, test } from '@playwright/test';
 
 test('development console renders and creates a validated direct PDF', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByRole('img', { name: 'Urveska' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'PDF Creation Service' })).toBeVisible();
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(228, 243, 250)');
   await expect(page.getByText('internal testing console, not a general public file converter')).toBeVisible();
   await expect(page.locator('body')).not.toContainText('BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB');
 

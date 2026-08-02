@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { CONSOLE_SESSION_COOKIE, hasConsoleAccess, isConsoleEnabled, readCookie, requireSameOrigin } from '@/lib/console-auth';
 import { authenticateBearer } from '@/lib/pdf/auth';
 import { parsePdfCreationRequest, readJsonRequest } from '@/lib/pdf/contract';
 import { errorResponse, PdfServiceError } from '@/lib/pdf/errors';
@@ -12,7 +13,10 @@ export async function POST(request: Request): Promise<Response> {
   const requestId = randomUUID();
   let correlationId: string | undefined;
   try {
-    if (!consoleEnabled()) throw new PdfServiceError('caller_forbidden', 404, 'The testing console is disabled.');
+    if (!isConsoleEnabled()) throw new PdfServiceError('caller_forbidden', 404, 'The testing console is disabled.');
+    if (!hasConsoleAccess(readCookie(request.headers.get('cookie'), CONSOLE_SESSION_COOKIE))) {
+      throw new PdfServiceError('caller_forbidden', 403, 'Sign in to the testing console first.');
+    }
     const origin = requireSameOrigin(request);
     const key = process.env.PDF_CREATION_TEST;
     if (!key) throw new PdfServiceError('service_unavailable', 503, 'The testing caller is not configured.');
@@ -42,20 +46,4 @@ export async function POST(request: Request): Promise<Response> {
   } catch (error) {
     return errorResponse(error, requestId, correlationId);
   }
-}
-
-function consoleEnabled(): boolean {
-  return process.env.NODE_ENV !== 'production' || process.env.PDF_CREATION_CONSOLE_ENABLED === 'true';
-}
-
-function requireSameOrigin(request: Request): string {
-  const browserOrigin = request.headers.get('origin');
-  const internalOrigin = new URL(request.url).origin;
-  const host = request.headers.get('x-forwarded-host')?.split(',', 1)[0].trim() || request.headers.get('host');
-  const protocol = request.headers.get('x-forwarded-proto')?.split(',', 1)[0].trim() || new URL(request.url).protocol.slice(0, -1);
-  const publicOrigin = host ? `${protocol}://${host}` : internalOrigin;
-  if (!browserOrigin || (browserOrigin !== publicOrigin && browserOrigin !== internalOrigin)) {
-    throw new PdfServiceError('caller_forbidden', 403, 'The testing console accepts same-origin requests only.');
-  }
-  return publicOrigin;
 }
