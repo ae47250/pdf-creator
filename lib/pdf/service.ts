@@ -10,6 +10,10 @@ import type { ReportManifest } from '@/lib/storage/manifest';
 
 let rendererInUse = false;
 
+// Vercel Hobby permits one programmatic Firewall rate-limit rule per project.
+// Caller identity remains the counting key, so callers do not share a bucket.
+export const FIREWALL_RATE_LIMIT_ID = 'pdf-creation';
+
 export type ServiceResult =
   | { kind: 'direct'; render: RenderResult; durationMs: number; htmlBytes: number }
   | { kind: 'stored'; body: StoredResponse };
@@ -77,7 +81,7 @@ export async function createPdf(
 
 async function enforceRateLimit(caller: Caller, request?: Request): Promise<void> {
   if (!process.env.VERCEL) return;
-  const result = await checkRateLimit(`pdf-creation-${caller.id}`, {
+  const result = await checkRateLimit(FIREWALL_RATE_LIMIT_ID, {
     rateLimitKey: caller.id,
     ...(request ? { request } : {})
   });
