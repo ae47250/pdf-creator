@@ -2,7 +2,7 @@ import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { PdfServiceError } from '@/lib/pdf/errors';
 
 export const CONSOLE_SESSION_COOKIE = '__Host-pdf-creation-console';
-export const CONSOLE_SESSION_MAX_AGE_SECONDS = 8 * 60 * 60;
+export const CONSOLE_SESSION_MAX_AGE_SECONDS = 2 * 60;
 
 type Environment = Record<string, string | undefined>;
 
