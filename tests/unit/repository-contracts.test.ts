@@ -17,5 +17,8 @@ describe('repository contracts', () => {
     expect(openapi).toContain('$ref: ./pdf-creation.schema.json');
     expect(openapi).not.toContain('renderMode');
     expect(openapi).not.toContain('sourceApp');
+    for (const status of ['415', '422', '502', '503', '504']) {
+      expect(openapi).toContain(`"${status}": { $ref: "#/components/responses/Error" }`);
+    }
   });
 });

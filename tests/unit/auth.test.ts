@@ -28,6 +28,13 @@ describe('bearer authentication', () => {
       .toThrowError(/configuration is invalid/);
   });
 
+  it('fails closed when one key is assigned to multiple caller identities', () => {
+    expect(() => authenticateBearer(`Bearer ${current}`, {
+      PDF_CREATION_PATHFINDER: current,
+      PDF_CREATION_TEST: current
+    })).toThrowError(/configuration is invalid/);
+  });
+
   it('enforces caller storage permissions', () => {
     expect(() => authorizeRequest({ id: 'limited', mayStore: false, maxRetentionDays: 1, rateLimitPerMinute: 1 }, { storeResult: true, retentionDays: 1 }))
       .toThrowError(/may not store/);

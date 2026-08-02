@@ -23,6 +23,7 @@ export function authenticateBearer(
   const suppliedDigest = digest(supplied);
   let configuredCount = 0;
   let matched: CallerDefinition | undefined;
+  const matchedCallerIds = new Set<string>();
 
   for (const caller of CALLERS) {
     for (const suffix of ['', '_PREVIOUS']) {
@@ -37,7 +38,10 @@ export function authenticateBearer(
         );
       }
       const isMatch = timingSafeEqual(suppliedDigest, digest(configured));
-      if (isMatch) matched = caller;
+      if (isMatch) {
+        matched = caller;
+        matchedCallerIds.add(caller.id);
+      }
     }
   }
 
@@ -46,6 +50,13 @@ export function authenticateBearer(
       'service_unavailable',
       503,
       'The PDF service authentication configuration is unavailable.'
+    );
+  }
+  if (matchedCallerIds.size > 1) {
+    throw new PdfServiceError(
+      'service_unavailable',
+      503,
+      'The PDF service authentication configuration is invalid.'
     );
   }
   if (!match || !matched) {

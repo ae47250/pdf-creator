@@ -21,7 +21,7 @@ export async function renderPdf(request: PdfCreationRequest, caller: string): Pr
   let originalError: unknown;
 
   try {
-    browser = await withTimeout(launchBrowser(), LIMITS.browserStartMs, 'render_timeout', 'The browser did not start in time.');
+    browser = await launchBrowserWithinTimeout();
     page = await browser.newPage();
     await configurePage(page);
     const remainingRenderMs = Math.max(1, LIMITS.renderMs - (Date.now() - renderStarted));
@@ -39,6 +39,16 @@ export async function renderPdf(request: PdfCreationRequest, caller: string): Pr
     throw error;
   } finally {
     await closeSafely(page, browser, originalError);
+  }
+}
+
+async function launchBrowserWithinTimeout(): Promise<Browser> {
+  const launch = launchBrowser();
+  try {
+    return await withTimeout(launch, LIMITS.browserStartMs, 'render_timeout', 'The browser did not start in time.');
+  } catch (error) {
+    void launch.then((lateBrowser) => closeSafely(undefined, lateBrowser, error)).catch(() => undefined);
+    throw error;
   }
 }
 
@@ -176,10 +186,13 @@ async function closeSafely(page: Page | undefined, browser: Browser | undefined,
 }
 
 async function withCloseTimeout(operation: Promise<unknown>): Promise<void> {
+  let timer: ReturnType<typeof setTimeout>;
   await Promise.race([
     operation,
-    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('close timeout')), LIMITS.closeMs))
-  ]);
+    new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('close timeout')), LIMITS.closeMs);
+    })
+  ]).finally(() => clearTimeout(timer!));
 }
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, code: 'render_timeout' | 'asset_not_ready', message: string): Promise<T> {

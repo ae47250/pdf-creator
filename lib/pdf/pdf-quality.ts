@@ -21,7 +21,7 @@ export async function finalizeAndValidatePdf(
   } catch {
     throw new PdfServiceError('pdf_invalid', 500, 'The generated PDF could not be parsed.');
   }
-  applyMetadata(document, request.metadata, caller);
+  applyMetadata(document, request.metadata, caller, request.filename);
   const saved = await document.save({ useObjectStreams: true });
   if (saved.byteLength > LIMITS.pdfBytes) {
     throw new PdfServiceError('pdf_too_large', 413, `The PDF exceeds the ${LIMITS.pdfBytes}-byte limit.`);
@@ -89,12 +89,13 @@ export function sha256(value: Uint8Array | string): string {
   return createHash('sha256').update(value).digest('hex');
 }
 
-function applyMetadata(document: PDFDocument, metadata: PdfMetadata | undefined, caller: string): void {
+function applyMetadata(document: PDFDocument, metadata: PdfMetadata | undefined, caller: string, filename: string): void {
   document.setProducer('Urveska PDF Creation Service');
   document.setCreator(`Urveska PDF Creation Service (${caller})`);
   document.setCreationDate(new Date());
   document.setModificationDate(new Date());
   if (metadata?.title) document.setTitle(metadata.title, { showInWindowTitleBar: true });
+  else if (!document.getTitle() || document.getTitle() === 'about:blank') document.setTitle(filename.replace(/\.pdf$/i, ''));
   if (metadata?.author) document.setAuthor(metadata.author);
   if (metadata?.subject) document.setSubject(metadata.subject);
   if (metadata?.keywords) document.setKeywords(metadata.keywords);

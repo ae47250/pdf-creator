@@ -35,6 +35,16 @@ describe('PDF quality', () => {
       .rejects.toBeInstanceOf(PdfServiceError);
   });
 
+  it('replaces Chromium\'s about:blank title with the requested filename', async () => {
+    const pdf = await PDFDocument.create();
+    pdf.addPage([612, 792]);
+    pdf.setTitle('about:blank');
+    const withoutMetadata = { ...request, filename: 'Fallback_Title.pdf', metadata: undefined };
+    const result = await finalizeAndValidatePdf(await pdf.save(), withoutMetadata, 'test', 0, request.html);
+    const loaded = await PDFDocument.load(result.pdf, { updateMetadata: false });
+    expect(loaded.getTitle()).toBe('Fallback_Title');
+  });
+
   it('rejects an expected page-count mismatch', async () => {
     const mismatch = { ...request, expectedPageCount: 2 };
     await expect(finalizeAndValidatePdf(await onePage(), mismatch, 'test', 0, request.html))

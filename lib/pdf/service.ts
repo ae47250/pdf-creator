@@ -121,7 +121,10 @@ function storedResponse(
 }
 
 export function hashRequest(request: PdfCreationRequest): string {
-  return sha256(canonicalJson(request));
+  const semanticRequest = { ...request };
+  delete semanticRequest.correlationId;
+  delete semanticRequest.idempotencyKey;
+  return sha256(canonicalJson(semanticRequest));
 }
 
 function canonicalJson(value: unknown): string {

@@ -11,6 +11,7 @@ const storage = vi.hoisted(() => ({
 vi.mock('@/lib/storage/r2', () => storage);
 
 import { claimIdempotency, findIdempotentReport, idempotencyHash } from '@/lib/storage/idempotency';
+import { hashRequest } from '@/lib/pdf/service';
 
 const mapping = { requestHash: 'a'.repeat(64), reportId: 'r30_00000000-0000-4000-8000-000000000001', expiresAt: '2099-01-01T00:00:00.000Z' };
 
@@ -20,6 +21,25 @@ describe('idempotency records', () => {
   it('uses a caller-scoped one-way object key', () => {
     expect(idempotencyHash('pathfinder', 'safe:key')).toMatch(/^[0-9a-f]{64}$/);
     expect(idempotencyHash('pathfinder', 'safe:key')).not.toBe(idempotencyHash('test', 'safe:key'));
+  });
+
+  it('ignores diagnostic correlation IDs when hashing a retry', () => {
+    const request = {
+      html: '<!doctype html><html><head></head><body>retry</body></html>',
+      filename: 'Retry.pdf',
+      storeResult: true,
+      storeHtml: true,
+      retentionDays: 30 as const,
+      idempotencyKey: 'safe:key',
+      correlationId: 'attempt-one',
+      page: {
+        format: 'Letter' as const,
+        orientation: 'portrait' as const,
+        marginsInches: { top: 0, right: 0, bottom: 0, left: 0 }
+      }
+    };
+    expect(hashRequest(request)).toBe(hashRequest({ ...request, correlationId: 'attempt-two' }));
+    expect(hashRequest(request)).not.toBe(hashRequest({ ...request, filename: 'Different.pdf' }));
   });
 
   it('replays the same request and rejects a different request', async () => {

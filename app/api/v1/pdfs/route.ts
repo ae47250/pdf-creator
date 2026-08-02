@@ -12,8 +12,10 @@ export async function POST(request: Request): Promise<Response> {
   const requestId = randomUUID();
   const started = Date.now();
   let correlationId: string | undefined;
+  let callerId: string | undefined;
   try {
     const caller = authenticateBearer(request.headers.get('authorization'));
+    callerId = caller.id;
     const creationRequest = parsePdfCreationRequest(await readJsonRequest(request));
     correlationId = creationRequest.correlationId;
     const origin = new URL(request.url).origin;
@@ -29,7 +31,7 @@ export async function POST(request: Request): Promise<Response> {
     });
   } catch (error) {
     const controlled = asServiceError(error);
-    logResult({ event: 'pdf_failed', requestId, code: controlled.code, status: controlled.status, durationMs: Date.now() - started });
+    logResult({ event: 'pdf_failed', requestId, ...(callerId ? { caller: callerId } : {}), code: controlled.code, status: controlled.status, durationMs: Date.now() - started });
     return errorResponse(controlled, requestId, correlationId);
   }
 }

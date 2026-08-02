@@ -95,10 +95,13 @@ export async function deleteObjects(keys: string[]): Promise<void> {
   if (keys.length === 0) return;
   const { client: storage, bucket } = r2();
   try {
-    await storageTimeout(storage.send(new DeleteObjectsCommand({
+    const response = await storageTimeout(storage.send(new DeleteObjectsCommand({
       Bucket: bucket,
       Delete: { Objects: keys.map((Key) => ({ Key })), Quiet: true }
     })));
+    if (response.Errors?.length) {
+      throw new PdfServiceError('storage_failed', 502, 'Storage cleanup failed.');
+    }
   } catch {
     throw new PdfServiceError('storage_failed', 502, 'Storage cleanup failed.');
   }
