@@ -9,8 +9,10 @@ import { readManifest, storeReport } from '@/lib/storage/report-store';
 import type { ReportManifest } from '@/lib/storage/manifest';
 
 let rendererInUse = false;
+const localRateLimitWindows = new Map<string, number[]>();
+const RATE_LIMIT_WINDOW_MS = 60_000;
 
-// Vercel Hobby permits one programmatic Firewall rate-limit rule per project.
+// If Vercel Firewall is configured, this is the one published rule ID.
 // Caller identity remains the counting key, so callers do not share a bucket.
 export const FIREWALL_RATE_LIMIT_ID = 'pdf-creation';
 
@@ -89,8 +91,21 @@ async function enforceRateLimit(caller: Caller, request?: Request): Promise<void
     throw new PdfServiceError('rate_limited', 429, 'This caller has exceeded its PDF creation rate limit.');
   }
   if (result.error === 'not-found') {
-    throw new PdfServiceError('service_unavailable', 503, 'The caller rate limit is not configured.');
+    // Firewall rate limits require Vercel Pro. Keep the service usable on Hobby
+    // while retaining a per-instance limit for each authenticated caller.
+    enforceLocalRateLimit(caller);
   }
+}
+
+function enforceLocalRateLimit(caller: Caller): void {
+  const now = Date.now();
+  const recent = (localRateLimitWindows.get(caller.id) ?? []).filter((time) => now - time < RATE_LIMIT_WINDOW_MS);
+  if (recent.length >= caller.rateLimitPerMinute) {
+    localRateLimitWindows.set(caller.id, recent);
+    throw new PdfServiceError('rate_limited', 429, 'This caller has exceeded its PDF creation rate limit.');
+  }
+  recent.push(now);
+  localRateLimitWindows.set(caller.id, recent);
 }
 
 function storedResponse(

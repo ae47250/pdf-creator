@@ -40,4 +40,14 @@ describe('programmatic Firewall rate limiting', () => {
     expect(FIREWALL_RATE_LIMIT_ID).toBe('pdf-creation');
     expect(firewall.unstable_checkRateLimit).toHaveBeenCalledWith('pdf-creation', expect.objectContaining({ rateLimitKey: 'test' }));
   });
+
+  it('uses a per-instance caller limit when Firewall rate limiting is unavailable', async () => {
+    firewall.unstable_checkRateLimit.mockResolvedValue({ rateLimited: false, error: 'not-found' });
+    const limitedCaller = { ...caller, id: `fallback-${Date.now()}`, rateLimitPerMinute: 1 };
+
+    await createPdf(request, limitedCaller, 'first-request', 'https://service.example');
+
+    await expect(createPdf(request, limitedCaller, 'second-request', 'https://service.example'))
+      .rejects.toMatchObject({ code: 'rate_limited', status: 429 });
+  });
 });
