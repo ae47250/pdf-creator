@@ -10,8 +10,21 @@ import { PdfServiceError } from '@/lib/pdf/errors';
 import { LIMITS } from '@/lib/pdf/limits';
 
 let client: S3Client | undefined;
+let clientKey: string | undefined;
+
+type R2Environment = 'production' | 'test';
+
+export function assertR2Environment(environment: Record<string, string | undefined> = process.env): R2Environment {
+  const configured = environment.PDF_CREATION_R2_ENVIRONMENT;
+  const expected: R2Environment = environment.VERCEL_ENV === 'production' ? 'production' : 'test';
+  if ((configured !== 'production' && configured !== 'test') || configured !== expected) {
+    throw new PdfServiceError('service_unavailable', 503, 'PDF storage environment isolation is not configured correctly.');
+  }
+  return configured;
+}
 
 function config() {
+  assertR2Environment();
   const accountId = process.env.PDF_CREATION_R2_ACCOUNT_ID;
   const bucket = process.env.PDF_CREATION_R2_BUCKET_NAME;
   const accessKeyId = process.env.PDF_CREATION_R2_ACCESS_KEY_ID;
@@ -30,12 +43,16 @@ function config() {
 
 function r2(): { client: S3Client; bucket: string } {
   const settings = config();
-  client ??= new S3Client({
-    region: 'auto',
-    endpoint: settings.endpoint,
-    credentials: settings.credentials,
-    maxAttempts: 3
-  });
+  const nextClientKey = `${settings.endpoint}\0${settings.credentials.accessKeyId}`;
+  if (!client || clientKey !== nextClientKey) {
+    client = new S3Client({
+      region: 'auto',
+      endpoint: settings.endpoint,
+      credentials: settings.credentials,
+      maxAttempts: 3
+    });
+    clientKey = nextClientKey;
+  }
   return { client, bucket: settings.bucket };
 }
 

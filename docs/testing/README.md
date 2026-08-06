@@ -26,8 +26,11 @@ npm.cmd run test:full
 # Generate local PDFs and render selected PDFs page-by-page to PNG
 npm.cmd run test:visual
 
-# Manually run the rate-limited production reliability check
-npm.cmd run test:live
+# Manually run the protected Preview reliability check
+npm.cmd run test:preview
+
+# Manually run the isolated test-R2 workflow
+npm.cmd run test:preview:storage
 
 # Summarize the newest local and live JSON evidence
 npm.cmd run test:report
@@ -59,24 +62,31 @@ Generated PDFs, PNGs, and JSON measurements are written under `test-artifacts/pd
 - Missing or invalid Firewall fail-closed behavior
 - High concurrency, browser crashes, local-file attempts, internal-network attempts, and repeated intentional failures
 
-### Controlled live execution only
+### Controlled Preview execution only
 
 The live runner reads these environment-variable names without printing their values:
 
 ```text
-PDF_CREATION_LIVE_URL
-PDF_CREATION_LIVE_KEY
-PDF_CREATION_ECONPLANNER
-PDF_CREATION_LIVE_TIMEOUT_MS
-PDF_CREATION_LIVE_MAX_LATENCY_MS
-PDF_CREATION_LIVE_STAGE_DELAY_MS
+PDF_CREATION_PREVIEW_URL
+PDF_CREATION_PREVIEW_KEY
+PDF_CREATION_PREVIEW_TIMEOUT_MS
+PDF_CREATION_PREVIEW_MAX_LATENCY_MS
+PDF_CREATION_PREVIEW_STAGE_DELAY_MS
+PDF_CREATION_PREVIEW_ROUND_DELAY_MS
+VERCEL_AUTOMATION_BYPASS_SECRET
 ```
 
-`PDF_CREATION_LIVE_KEY` takes priority; `PDF_CREATION_ECONPLANNER` is the approved fallback for this repository's current configured environment. The default URL is the documented production alias.
+The runner has no Production URL or credential fallback. It blocks unless the explicit Preview URL and key are present. The bypass secret is used only to pass Preview Deployment Protection and is never printed.
 
-The runner sends one ordinary unauthorized request and one invalid request, then attempts concurrency 1, 2, 5, and 10. It never exceeds ten concurrent requests. It stops escalation after any 429, 5xx, timeout, corrupt PDF, cross-request contamination, HTTP error, or response over the configured healthy-latency ceiling. After stopping, it sends one single-request recovery probe. All payloads are small, fictional, and use `storeResult: false`.
+The runner sends one ordinary unauthorized request and one invalid request, then runs concurrency 1, 2, 5, and 10 three times with at least 61 seconds between complete rounds. All payloads are small and fictional and use `storeResult: false`. A request retries only `429 renderer_busy`, requires `Retry-After: 1`, uses at most five attempts and a 15-second admission deadline, and applies the documented full-jitter delay. It never retries `rate_limited`, a timeout, or an ambiguous 5xx. Acceptance requires 100% eventual success, no corruption/contamination/timeouts, warm eventual p95 at most 15 seconds, maximum eventual completion at most 30 seconds, and successful recovery.
 
-The live runner does not test production R2, lifecycle deletion, stored view/download links, deliberate renderer crashes, large payload abuse, or sustained capacity. Those checks require separately approved disposable infrastructure or production-data authorization.
+### Isolated storage harness
+
+The storage runner additionally requires the R2 service variables plus `PDF_CREATION_R2_EXPECTED_TEST_BUCKET_NAME`, `PDF_CREATION_R2_PRODUCTION_BUCKET_NAME`, and the local-only `PDF_CREATION_R2_LIFECYCLE_READ_TOKEN`. The lifecycle token must be a Cloudflare `Workers R2 Storage Read` token and must never be added to Vercel, the Preview runtime, Production, or the PDF service. It requires `PDF_CREATION_R2_ENVIRONMENT=test` and exact configured/approved test-bucket identity. Using the existing bucket-scoped Object Read & Write S3 credentials and endpoint, it first requires `HeadBucket` test = HTTP 200 and then `HeadBucket` Production = exactly HTTP 403. Any other result stops before writes. It never sends a modifying Production request.
+
+After isolation, the runner performs one read-only Cloudflare API `GET` for the approved test bucket’s lifecycle configuration. It validates the required retention and idempotency rules, then exercises stored requests with and without HTML, replay, conflict, an identical-request race, view/download disposition and integrity, conditional collision preservation, exact 410 expiry, and interrupted cleanup; then removes exact run-owned reports/manifests/artifacts/idempotency mappings. It leaves only three test-bucket lifecycle canaries. Their private local ledger contains exact prefixes, creation timestamps, expected expirations, and scheduled observations. The ledger lives under ignored `test-artifacts`; summaries and committed reports contain only redacted counts. The lifecycle API request is never sent to the Production bucket, and no lifecycle-modifying request is issued.
+
+All canaries are test-bucket-only. Observe retention-1 on day 3, retention-7 on day 9, and retention-30 on day 32. Day 3 is the Production-readiness gate for test-bucket retention-1 deletion only. Day 32 qualifies the complete test-bucket lifecycle. Production deletion remains unverified until a later separately authorized Production observation.
 
 ## Adding an application-specific fixture
 
@@ -96,11 +106,11 @@ The live runner does not test production R2, lifecycle deletion, stored view/dow
 
 ## Continuous integration
 
-This repository currently has no continuous-integration workflow. No live or visual test runs automatically. If CI is added later, use `test:fast` by default and run local Chromium tests only on a runner with a pinned browser. Keep `test:live` manual and outside scheduled or pull-request workflows.
+This repository currently has no continuous-integration workflow. No Preview, storage, or visual test runs automatically. If CI is added later, use `test:fast` by default and run local Chromium tests only on a runner with a pinned browser. Keep both Preview commands manual and outside scheduled or pull-request workflows.
 
 ## Known limitations
 
 - The CSS parser accepts some browser-recoverable malformed CSS instead of rejecting it.
 - The service deliberately allows one Chromium render at a time per function instance and returns `renderer_busy` when a second request reaches the same instance.
 - Visual results depend on the installed browser and fonts; pin those components before using screenshots as formal baselines.
-- Public stored-report links, R2 lifecycle behavior, Vercel logs, and production memory ceilings are not proven by local tests.
+- Production lifecycle deletion, Vercel logs, and production memory ceilings are not proven by local tests or test-bucket canaries.

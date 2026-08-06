@@ -68,6 +68,7 @@ export function latencySummary(values) {
   return {
     medianMs: median(ordered),
     p95Ms: percentile(ordered, 95),
+    p99Ms: percentile(ordered, 99),
     maxMs: ordered.length ? ordered.at(-1) : null
   };
 }
@@ -78,6 +79,17 @@ export async function writeJson(path, value) {
 
 export function runTimestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
+}
+
+export function busyRetryDelayMs(retryNumber, randomValue = Math.random()) {
+  if (!Number.isInteger(retryNumber) || retryNumber < 1) throw new Error('invalid-retry-number');
+  if (typeof randomValue !== 'number' || randomValue < 0 || randomValue > 1) throw new Error('invalid-random-value');
+  const jitterCeilingMs = Math.min(4_000, (2 ** (retryNumber - 1)) * 1_000);
+  return Math.max(1_000, Math.floor(randomValue * jitterCeilingMs));
+}
+
+export function canStartAdmissionRetry(nowMs, delayMs, deadlineMs) {
+  return nowMs < deadlineMs && nowMs + delayMs < deadlineMs;
 }
 
 async function resolveExecutable(name, environmentName) {

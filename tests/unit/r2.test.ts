@@ -15,7 +15,7 @@ vi.mock('@aws-sdk/client-s3', () => {
   };
 });
 
-import { deleteObjects } from '@/lib/storage/r2';
+import { assertR2Environment, deleteObjects } from '@/lib/storage/r2';
 
 describe('R2 cleanup', () => {
   beforeEach(() => {
@@ -23,6 +23,8 @@ describe('R2 cleanup', () => {
     vi.stubEnv('PDF_CREATION_R2_BUCKET_NAME', 'private-bucket');
     vi.stubEnv('PDF_CREATION_R2_ACCESS_KEY_ID', 'access');
     vi.stubEnv('PDF_CREATION_R2_SECRET_ACCESS_KEY', 'secret');
+    vi.stubEnv('PDF_CREATION_R2_ENVIRONMENT', 'test');
+    vi.stubEnv('VERCEL_ENV', 'preview');
   });
 
   afterEach(() => {
@@ -34,5 +36,28 @@ describe('R2 cleanup', () => {
     storage.send.mockResolvedValue({ Errors: [{ Key: 'reports/example/report.pdf', Code: 'AccessDenied' }] });
     await expect(deleteObjects(['reports/example/report.pdf']))
       .rejects.toMatchObject({ code: 'storage_failed' });
+  });
+
+  it.each([
+    ['production', 'production'],
+    ['preview', 'test'],
+    ['development', 'test']
+  ])('accepts %s only with the %s storage marker', (vercelEnvironment, storageEnvironment) => {
+    expect(assertR2Environment({
+      VERCEL_ENV: vercelEnvironment,
+      PDF_CREATION_R2_ENVIRONMENT: storageEnvironment
+    })).toBe(storageEnvironment);
+  });
+
+  it.each([
+    ['production', 'test'],
+    ['preview', 'production'],
+    ['development', 'production'],
+    ['preview', undefined]
+  ])('rejects Vercel %s with storage marker %s', (vercelEnvironment, storageEnvironment) => {
+    expect(() => assertR2Environment({
+      VERCEL_ENV: vercelEnvironment,
+      PDF_CREATION_R2_ENVIRONMENT: storageEnvironment
+    })).toThrowError(expect.objectContaining({ code: 'service_unavailable', status: 503 }));
   });
 });
