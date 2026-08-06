@@ -1,6 +1,6 @@
 # PDF service multi-application hardening report
 
-Status: isolated Preview storage verification passed on 2026-08-06; lifecycle observations remain pending.
+Status: isolated Preview storage verification passed on 2026-08-06. PR #6 may merge without waiting for the later lifecycle observations; all three observations remain pending.
 
 ## Local and mocked evidence
 
@@ -15,7 +15,7 @@ Status: isolated Preview storage verification passed on 2026-08-06; lifecycle ob
 
 ## Automatic Preview-deployment evidence
 
-- The tested PR Preview deployment was Ready and its available Vercel checks passed before the isolated workflow ran.
+- The exact tested PR head Preview deployment was Ready and its available Vercel checks passed.
 
 ## Live isolated test-bucket evidence
 
@@ -30,13 +30,26 @@ Status: isolated Preview storage verification passed on 2026-08-06; lifecycle ob
 
 ## Lifecycle observations
 
-- Retention-1 observation: 2026-08-09 (day 3).
-- Retention-7 observation: 2026-08-15 (day 9).
-- Retention-30 observation: 2026-09-07 (day 32).
+- Retention-1 observation: pending until 2026-08-09T21:44:41.201Z (day 3).
+- Retention-7 observation: pending until 2026-08-15T21:44:41.201Z (day 9).
+- Retention-30 observation: pending until 2026-09-07T21:44:41.201Z (day 32).
 
-Current qualification: test-bucket lifecycle verification is in progress. Production lifecycle configuration was not inspected by this run.
+The retained canaries were confirmed present by read-only inspection. Exactly three relevant objects remain, every object is in the private ledger, and each exposes lifecycle expiration metadata. They must remain unchanged for the scheduled observations.
 
-After a separately authorized read-only Production configuration inspection succeeds, use: "Production lifecycle configuration inspected read-only; test-bucket lifecycle verification in progress."
+Pending observation dates are later lifecycle-qualification evidence, not blockers to merging PR #6 or starting the application quality audit.
+
+## Read-only Production configuration evidence
+
+- The approved Production bucket identity was found through the read-only Cloudflare API.
+- The Vercel Production environment contains the required encrypted R2 variable names. Their values were not displayed, copied, or decrypted during this review.
+- Production `r2.dev` public access is disabled.
+- Production has zero enabled R2 custom domains.
+- The current Production lifecycle configuration contains the default seven-day multipart-abort rule, a broad `reports/` deletion rule at 31 days, and a `temporary-uploads/` deletion rule at one day.
+- It does not yet contain the documented retention-specific 2/8/31-day rules, caller idempotency backstops, or transitional legacy caller-prefix rules.
+- This configuration gap does not block merging the already isolated and tested code because no calling application is being activated. It remains a required separately authorized Production-configuration and caller-activation gate.
+- No Production canary or other Production R2 object was created, modified, copied, or deleted during this inspection.
+
+Current qualification: "Production lifecycle configuration inspected read-only; test-bucket lifecycle verification in progress."
 
 The day-3 readiness gate concerns deletion of the test-bucket retention-1 canary only. Production lifecycle deletion remains unverified. Full test-bucket lifecycle qualification requires the successful day-32 observation.
 
@@ -46,4 +59,4 @@ The day-3 readiness gate concerns deletion of the test-bucket retention-1 canary
 - No manual Preview or Production deployment was triggered or promoted.
 - No Production R2 canary or other Production object was created.
 - No application was activated. EconPlanner, Pathfinder, Job Search, and Tree Service each still require its own retry/idempotency integration gate and separate activation authorization.
-- PR merge and Production deployment remain separately authorized actions.
+- PR merge and its automatic Production deployment are authorized only after every immediate merge gate passes; the later lifecycle observations do not block that decision.
