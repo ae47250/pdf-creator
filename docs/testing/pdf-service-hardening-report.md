@@ -34,7 +34,9 @@ Status: isolated Preview storage verification passed on 2026-08-06; lifecycle ob
 - Retention-7 observation: 2026-08-15 (day 9).
 - Retention-30 observation: 2026-09-07 (day 32).
 
-Qualification language: "Production lifecycle configuration inspected read-only; test-bucket lifecycle verification in progress."
+Current qualification: test-bucket lifecycle verification is in progress. Production lifecycle configuration was not inspected by this run.
+
+After a separately authorized read-only Production configuration inspection succeeds, use: "Production lifecycle configuration inspected read-only; test-bucket lifecycle verification in progress."
 
 The day-3 readiness gate concerns deletion of the test-bucket retention-1 canary only. Production lifecycle deletion remains unverified. Full test-bucket lifecycle qualification requires the successful day-32 observation.
 
