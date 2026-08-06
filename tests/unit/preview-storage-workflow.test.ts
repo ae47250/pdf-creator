@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error The verification runner is intentionally plain Node.js so it can run without a build step.
-import { assertHeadBucketIsolation, parseRetryAfterSeconds, validateCanaryLedger } from '@/scripts/run-preview-storage-workflow.mjs';
+import {
+  assertHeadBucketIsolation,
+  lifecycleInspectionRequest,
+  parseLifecycleApiResponse,
+  parseRetryAfterSeconds,
+  validateCanaryLedger,
+  validateLifecycleApiResponse
+} from '@/scripts/run-preview-storage-workflow.mjs';
 // @ts-expect-error The verification utilities are intentionally plain Node.js modules.
 import { busyRetryDelayMs, canStartAdmissionRetry } from '@/scripts/pdf-test-utils.mjs';
 
@@ -10,6 +17,50 @@ describe('isolated Preview storage guards', () => {
     for (const [testStatus, productionStatus] of [[403, 403], [200, 400], [200, 404], [200, 200], [0, 403]]) {
       expect(() => assertHeadBucketIsolation(testStatus, productionStatus)).toThrow();
     }
+  });
+
+  it('validates the Cloudflare lifecycle response for the test bucket', () => {
+    const valid = {
+      success: true,
+      result: {
+        rules: [
+          { enabled: true, conditions: { prefix: 'reports/retention-1/' }, deleteObjectsTransition: { condition: { type: 'Age', maxAge: 172800 } } },
+          { enabled: true, conditions: { prefix: 'reports/retention-7/' }, deleteObjectsTransition: { condition: { type: 'Age', maxAge: 691200 } } },
+          { enabled: true, conditions: { prefix: 'reports/retention-30/' }, deleteObjectsTransition: { condition: { type: 'Age', maxAge: 2678400 } } },
+          { enabled: true, conditions: { prefix: 'Test/idempotency/' }, deleteObjectsTransition: { condition: { type: 'Age', maxAge: 2678400 } } },
+          { enabled: true, conditions: { prefix: '' }, abortMultipartUploadsTransition: { condition: { type: 'Age', maxAge: 604800 } } }
+        ]
+      }
+    };
+    expect(validateLifecycleApiResponse(valid)).toBe(true);
+    expect(parseLifecycleApiResponse(200, JSON.stringify(valid))).toBe(true);
+    expect(() => parseLifecycleApiResponse(403, '')).toThrow('test-lifecycle-read-failed');
+    expect(() => parseLifecycleApiResponse(200, '{')).toThrow('test-lifecycle-response-invalid');
+    for (const invalid of [
+      null,
+      { success: false, result: { rules: [] } },
+      { success: true, result: { rules: [] } },
+      { success: true, result: { rules: [{ enabled: false, conditions: { prefix: 'reports/retention-1/' }, deleteObjectsTransition: { condition: { type: 'Age', maxAge: 172800 } } }] } },
+      { success: true, result: { rules: [{ enabled: true, conditions: { prefix: 'reports/retention-1/' }, deleteObjectsTransition: { condition: { type: 'Age', maxAge: 1 } } }] } }
+    ]) {
+      expect(() => validateLifecycleApiResponse(invalid)).toThrow();
+    }
+  });
+
+  it('builds only a GET request for the approved test bucket', () => {
+    const request = lifecycleInspectionRequest('pdf-tests-bucket', {
+      PDF_CREATION_R2_ACCOUNT_ID: 'account-id',
+      PDF_CREATION_R2_EXPECTED_TEST_BUCKET_NAME: 'pdf-tests-bucket',
+      PDF_CREATION_R2_LIFECYCLE_READ_TOKEN: 'local-token',
+      PDF_CREATION_R2_JURISDICTION: ''
+    });
+    expect(request.options.method).toBe('GET');
+    expect(request.url).toContain('/r2/buckets/pdf-tests-bucket/lifecycle');
+    expect(() => lifecycleInspectionRequest('pdf-html-files', {
+      PDF_CREATION_R2_ACCOUNT_ID: 'account-id',
+      PDF_CREATION_R2_EXPECTED_TEST_BUCKET_NAME: 'pdf-tests-bucket',
+      PDF_CREATION_R2_LIFECYCLE_READ_TOKEN: 'local-token'
+    })).toThrow('blocked-lifecycle-bucket-not-approved-test-bucket');
   });
 
   it('accepts only complete canary ledger entries and exact remaining keys', () => {

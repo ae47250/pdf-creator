@@ -4,7 +4,6 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   DeleteObjectsCommand,
-  GetBucketLifecycleConfigurationCommand,
   GetObjectCommand,
   HeadBucketCommand,
   HeadObjectCommand,
@@ -24,7 +23,15 @@ const REQUIRED_ENVIRONMENT_NAMES = [
   'PDF_CREATION_R2_ENVIRONMENT',
   'PDF_CREATION_R2_EXPECTED_TEST_BUCKET_NAME',
   'PDF_CREATION_R2_PRODUCTION_BUCKET_NAME',
+  'PDF_CREATION_R2_LIFECYCLE_READ_TOKEN',
   'VERCEL_AUTOMATION_BYPASS_SECRET'
+];
+
+const EXPECTED_LIFECYCLE_RULES = [
+  ['reports/retention-1/', 2 * 24 * 60 * 60],
+  ['reports/retention-7/', 8 * 24 * 60 * 60],
+  ['reports/retention-30/', 31 * 24 * 60 * 60],
+  ['Test/idempotency/', 31 * 24 * 60 * 60]
 ];
 
 export function assertHeadBucketIsolation(testStatus, productionStatus) {
@@ -111,15 +118,17 @@ async function main() {
     summary.isolation.productionHeadBucket = productionStatus;
     assertHeadBucketIsolation(testStatus, productionStatus);
 
-    await verifyTestLifecycleConfiguration(storage, testBucket);
+    await verifyTestLifecycleConfiguration(testBucket);
     if ((await listRelevantTestKeys(storage, testBucket)).length) stop('test-prefixes-not-empty-before-run');
 
     const withoutHtmlKey = `preview-${runId}-without-html`;
+    const withHtmlKey = `preview-${runId}-with-html`;
+    const raceKey = `preview-${runId}-race`;
+    for (const key of [withoutHtmlKey, withHtmlKey, raceKey]) immediateKeys.add(idempotencyObjectKey(key));
     const withoutHtml = await submitStored(previewUrl, previewKey, withoutHtmlKey, false);
     const firstManifest = await inspectStoredReceipt(storage, testBucket, withoutHtml, false, immediateKeys);
     await verifyReportRoutes(previewUrl, withoutHtml, firstManifest);
 
-    const withHtmlKey = `preview-${runId}-with-html`;
     const withHtml = await submitStored(previewUrl, previewKey, withHtmlKey, true);
     const secondManifest = await inspectStoredReceipt(storage, testBucket, withHtml, true, immediateKeys);
     await verifyReportRoutes(previewUrl, withHtml, secondManifest);
@@ -128,12 +137,11 @@ async function main() {
     const replay = await submitStored(previewUrl, previewKey, withHtmlKey, true);
     if (replay.reportId !== withHtml.reportId || replay.storage?.idempotentReplay !== true) stop('idempotent-replay-failed');
     const beforeConflict = await listKeys(storage, testBucket, 'reports/');
-    const conflict = await submitStored(previewUrl, previewKey, withHtmlKey, true, { changed: true }, 409);
+    const conflict = await submitStored(previewUrl, previewKey, withHtmlKey, true, { subject: 'Changed fictional verification payload' }, 409);
     if (conflict?.error?.code !== 'idempotency_conflict') stop('idempotency-conflict-failed');
     const afterConflict = await listKeys(storage, testBucket, 'reports/');
     if (!sameStrings(beforeConflict, afterConflict)) stop('idempotency-conflict-changed-objects');
 
-    const raceKey = `preview-${runId}-race`;
     const race = await Promise.all([
       submitStored(previewUrl, previewKey, raceKey, false),
       submitStored(previewUrl, previewKey, raceKey, false)
@@ -149,7 +157,6 @@ async function main() {
     const expiredDownload = await fetch(`${previewUrl}/reports/${withoutHtml.reportId}/download`, { headers: previewBypassHeaders(), signal: AbortSignal.timeout(30_000) });
     if (expiredView.status !== 410 || expiredDownload.status !== 410) stop('expired-report-route-not-410');
 
-    for (const key of [withoutHtmlKey, withHtmlKey, raceKey]) immediateKeys.add(idempotencyObjectKey(key));
     summary.workflow = {
       storedWithoutHtml: true,
       storedWithHtml: true,
@@ -208,18 +215,66 @@ async function headBucketStatus(storage, bucket) {
   }
 }
 
-async function verifyTestLifecycleConfiguration(storage, bucket) {
-  const response = await storage.send(new GetBucketLifecycleConfigurationCommand({ Bucket: bucket }));
-  const rules = response.Rules ?? [];
-  for (const [prefix, days] of [['reports/retention-1/', 2], ['reports/retention-7/', 8], ['reports/retention-30/', 31]]) {
-    const match = rules.find((rule) => (rule.Filter?.Prefix ?? rule.Prefix) === prefix && rule.Status === 'Enabled');
-    if (!match || match.Expiration?.Days !== days) stop('test-lifecycle-rule-mismatch');
+export function validateLifecycleApiResponse(payload) {
+  if (!payload || payload.success !== true || !payload.result || !Array.isArray(payload.result.rules)) {
+    throw new Error('test-lifecycle-response-invalid');
   }
-  const idempotencyPrefixes = ['Test/idempotency/'];
-  for (const prefix of idempotencyPrefixes) {
-    const match = rules.find((rule) => (rule.Filter?.Prefix ?? rule.Prefix) === prefix && rule.Status === 'Enabled');
-    if (!match || match.Expiration?.Days !== 31) stop('test-idempotency-lifecycle-rule-mismatch');
+
+  for (const [prefix, maxAge] of EXPECTED_LIFECYCLE_RULES) {
+    const match = payload.result.rules.find((rule) => (
+      rule?.enabled === true &&
+      rule?.conditions?.prefix === prefix &&
+      rule?.deleteObjectsTransition?.condition?.type === 'Age'
+    ));
+    if (!match || match.deleteObjectsTransition.condition.maxAge !== maxAge) {
+      throw new Error('test-lifecycle-rule-mismatch');
+    }
   }
+  return true;
+}
+
+export function lifecycleInspectionRequest(bucket, environment = process.env) {
+  const expectedTestBucket = environment.PDF_CREATION_R2_EXPECTED_TEST_BUCKET_NAME;
+  if (!bucket || !expectedTestBucket || bucket !== expectedTestBucket) {
+    throw new Error('blocked-lifecycle-bucket-not-approved-test-bucket');
+  }
+  const accountId = environment.PDF_CREATION_R2_ACCOUNT_ID;
+  const token = environment.PDF_CREATION_R2_LIFECYCLE_READ_TOKEN;
+  if (!accountId || !token) throw new Error('missing-lifecycle-read-configuration');
+
+  const jurisdiction = environment.PDF_CREATION_R2_JURISDICTION;
+  const headers = {
+    accept: 'application/json',
+    authorization: `Bearer ${token}`
+  };
+  if (jurisdiction) headers['cf-r2-jurisdiction'] = jurisdiction;
+
+  return {
+    url: `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/r2/buckets/${encodeURIComponent(bucket)}/lifecycle`,
+    options: { method: 'GET', headers }
+  };
+}
+
+export function parseLifecycleApiResponse(status, rawBody) {
+  if (status !== 200) throw new Error('test-lifecycle-read-failed');
+  let payload;
+  try {
+    payload = JSON.parse(rawBody);
+  } catch {
+    throw new Error('test-lifecycle-response-invalid');
+  }
+  return validateLifecycleApiResponse(payload);
+}
+
+async function verifyTestLifecycleConfiguration(bucket) {
+  const request = lifecycleInspectionRequest(bucket);
+  let response;
+  try {
+    response = await fetch(request.url, { ...request.options, signal: AbortSignal.timeout(30_000) });
+  } catch {
+    stop('test-lifecycle-read-failed');
+  }
+  parseLifecycleApiResponse(response.status, await response.text());
 }
 
 async function submitStored(baseUrl, key, idempotencyKey, storeHtml, metadata = {}, expectedStatus = 200) {
@@ -240,7 +295,13 @@ async function submitStored(baseUrl, key, idempotencyKey, storeHtml, metadata = 
     signal: AbortSignal.timeout(120_000)
   });
   const body = await response.json();
-  if (response.status !== expectedStatus) stop(`stored-request-unexpected-status-${response.status}`);
+  if (response.status !== expectedStatus) {
+    const code = typeof body?.error?.code === 'string' ? body.error.code : 'unknown';
+    const path = typeof body?.error?.details?.[0]?.path === 'string'
+      ? body.error.details[0].path.replace(/[^A-Za-z0-9/_-]/g, '') || 'root'
+      : 'none';
+    stop(`stored-request-unexpected-status-${response.status}-${code}-${path}`);
+  }
   return body;
 }
 
