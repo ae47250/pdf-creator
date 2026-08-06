@@ -1,13 +1,6 @@
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error The verification runner is intentionally plain Node.js so it can run without a build step.
-import {
-  assertHeadBucketIsolation,
-  lifecycleInspectionRequest,
-  parseLifecycleApiResponse,
-  parseRetryAfterSeconds,
-  validateCanaryLedger,
-  validateLifecycleApiResponse
-} from '@/scripts/run-preview-storage-workflow.mjs';
+import { assertHeadBucketIsolation, lifecycleInspectionRequest, parseLifecycleApiResponse, parseRetryAfterSeconds, validateCanaryLedger, validateLifecycleApiResponse } from '@/scripts/run-preview-storage-workflow.mjs';
 // @ts-expect-error The verification utilities are intentionally plain Node.js modules.
 import { busyRetryDelayMs, canStartAdmissionRetry } from '@/scripts/pdf-test-utils.mjs';
 
