@@ -10,8 +10,14 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:fast": "vitest run tests/unit tests/regression",
+    "test:full": "npm run typecheck && npm run lint && npm test && npm run test:browser && npm run test:visual",
+    "test:mocks": "vitest run tests/unit/r2.test.ts tests/unit/report-store.test.ts tests/unit/idempotency.test.ts tests/unit/renderer-cleanup.test.ts tests/unit/rate-limit.test.ts",
     "test:watch": "vitest",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test tests/browser/console.spec.ts",
+    "test:visual": "playwright test tests/browser/visual-regression.spec.ts",
+    "test:live": "node --env-file-if-exists=.env.local scripts/run-live-reliability.mjs",
+    "test:report": "node scripts/generate-test-report.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1094.0",
