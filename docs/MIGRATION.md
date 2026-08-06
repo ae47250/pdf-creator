@@ -21,6 +21,20 @@ Calling applications continue to own calculations, facts, HTML, CSS, fonts, logo
 5. Monitor errors and latency and perform a rollback drill.
 6. Remove the old renderer only after the application's acceptance window.
 
+Passing the service tests does not make an unchanged caller reliable. EconPlanner, PathFinder, Job Search, and Tree Service each stay disabled until its own bounded wrapper and fictional Preview fixture pass integration testing, its feature-flag rollback works, and activation is separately authorized.
+
+## Required caller wrapper
+
+- Retry only `429 renderer_busy`, at most five total attempts and never beyond a 15-second admission deadline.
+- Require a valid `Retry-After` header. Wait for the greater of that value and full jitter from zero through `min(4 seconds, 2^(retryNumber-1) seconds)`.
+- Do not start an attempt after the deadline.
+- Return `429 rate_limited` as a recoverable user message; do not keep an interactive request open for 60 seconds.
+- Create one idempotency key before the first stored attempt and reuse it for busy retries and later recovery. A changed semantic payload gets a new key.
+- Direct requests never send an idempotency key and retry only a pre-render `renderer_busy`; do not automatically retry direct timeouts or ambiguous 5xx responses.
+- Keep API credentials on the server.
+
+Each application must prove the limits above, retry exhaustion, correct PDF pages/dimensions/text/links/visuals, and a rollback drill. EconPlanner additionally verifies stored receipt/replay/view/download; PathFinder uses a frozen `data-pdf-page` fixture and shadow comparison; Job Search and Tree Service verify representative fictional reports in their actual direct or stored mode. Future callers pass the same gate before receiving a Production key.
+
 PathFinder migration is a separate task: add `data-pdf-page`, remove its citation script, and retain its existing renderer for shadow comparison and immediate rollback. Do not move PathFinder CSS, templates, business schema, or JSON artifacts into this service.
 
 If a real fixture exceeds 3.5 MB of HTML, needs more than 25 pages, or fails marker-path visual comparison, do not weaken the contract. Keep the existing renderer and open a separate measured design task.

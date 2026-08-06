@@ -9,8 +9,6 @@ import { readManifest, storeReport } from '@/lib/storage/report-store';
 import type { ReportManifest } from '@/lib/storage/manifest';
 
 let rendererInUse = false;
-const localRateLimitWindows = new Map<string, number[]>();
-const RATE_LIMIT_WINDOW_MS = 60_000;
 
 // If Vercel Firewall is configured, this is the one published rule ID.
 // Caller identity remains the counting key, so callers do not share a bucket.
@@ -48,7 +46,6 @@ export async function createPdf(
 ): Promise<ServiceResult> {
   const started = Date.now();
   authorizeRequest(caller, request);
-  await enforceRateLimit(caller, originalRequest);
   const requestHash = hashRequest(request);
 
   if (request.storeResult && request.idempotencyKey) {
@@ -65,6 +62,7 @@ export async function createPdf(
   rendererInUse = true;
   let render: RenderResult;
   try {
+    await enforceRateLimit(caller, originalRequest);
     render = await renderPdf(request, caller.id);
   } finally {
     rendererInUse = false;
@@ -82,30 +80,22 @@ export async function createPdf(
 }
 
 async function enforceRateLimit(caller: Caller, request?: Request): Promise<void> {
-  if (!process.env.VERCEL) return;
-  const result = await checkRateLimit(FIREWALL_RATE_LIMIT_ID, {
-    rateLimitKey: caller.id,
-    ...(request ? { request } : {})
-  });
+  if (!process.env.VERCEL || process.env.VERCEL_ENV === 'development') return;
+  let result: Awaited<ReturnType<typeof checkRateLimit>>;
+  try {
+    result = await checkRateLimit(FIREWALL_RATE_LIMIT_ID, {
+      rateLimitKey: caller.id,
+      ...(request ? { request } : {})
+    });
+  } catch {
+    throw new PdfServiceError('service_unavailable', 503, 'The distributed PDF rate limit is unavailable.');
+  }
   if (result.rateLimited || result.error === 'blocked') {
     throw new PdfServiceError('rate_limited', 429, 'This caller has exceeded its PDF creation rate limit.');
   }
-  if (result.error === 'not-found') {
-    // Firewall rate limits require Vercel Pro. Keep the service usable on Hobby
-    // while retaining a per-instance limit for each authenticated caller.
-    enforceLocalRateLimit(caller);
+  if (result.error) {
+    throw new PdfServiceError('service_unavailable', 503, 'The distributed PDF rate limit is unavailable.');
   }
-}
-
-function enforceLocalRateLimit(caller: Caller): void {
-  const now = Date.now();
-  const recent = (localRateLimitWindows.get(caller.id) ?? []).filter((time) => now - time < RATE_LIMIT_WINDOW_MS);
-  if (recent.length >= caller.rateLimitPerMinute) {
-    localRateLimitWindows.set(caller.id, recent);
-    throw new PdfServiceError('rate_limited', 429, 'This caller has exceeded its PDF creation rate limit.');
-  }
-  recent.push(now);
-  localRateLimitWindows.set(caller.id, recent);
 }
 
 function storedResponse(

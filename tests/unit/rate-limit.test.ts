@@ -17,6 +17,7 @@ const request = {
   page: { format: 'Letter' as const, orientation: 'portrait' as const, marginsInches: { top: 0, right: 0, bottom: 0, left: 0 } }
 };
 const originalVercel = process.env.VERCEL;
+const originalVercelEnvironment = process.env.VERCEL_ENV;
 
 describe('programmatic Firewall rate limiting', () => {
   beforeEach(() => {
@@ -31,6 +32,8 @@ describe('programmatic Firewall rate limiting', () => {
   afterEach(() => {
     if (originalVercel === undefined) delete process.env.VERCEL;
     else process.env.VERCEL = originalVercel;
+    if (originalVercelEnvironment === undefined) delete process.env.VERCEL_ENV;
+    else process.env.VERCEL_ENV = originalVercelEnvironment;
     vi.clearAllMocks();
   });
 
@@ -41,13 +44,36 @@ describe('programmatic Firewall rate limiting', () => {
     expect(firewall.unstable_checkRateLimit).toHaveBeenCalledWith('pdf-creation', expect.objectContaining({ rateLimitKey: 'test' }));
   });
 
-  it('uses a per-instance caller limit when Firewall rate limiting is unavailable', async () => {
+  it('fails closed when the Vercel Firewall rule is unavailable', async () => {
     firewall.unstable_checkRateLimit.mockResolvedValue({ rateLimited: false, error: 'not-found' });
-    const limitedCaller = { ...caller, id: `fallback-${Date.now()}`, rateLimitPerMinute: 1 };
+    await expect(createPdf(request, caller, 'request-id', 'https://service.example'))
+      .rejects.toMatchObject({ code: 'service_unavailable', status: 503 });
+    expect(renderer.renderPdf).not.toHaveBeenCalled();
+  });
 
-    await createPdf(request, limitedCaller, 'first-request', 'https://service.example');
+  it('skips the external rule in local Vercel development', async () => {
+    process.env.VERCEL_ENV = 'development';
+    await createPdf(request, caller, 'request-id', 'http://localhost:3000');
+    expect(firewall.unstable_checkRateLimit).not.toHaveBeenCalled();
+    expect(renderer.renderPdf).toHaveBeenCalledOnce();
+  });
 
-    await expect(createPdf(request, limitedCaller, 'second-request', 'https://service.example'))
-      .rejects.toMatchObject({ code: 'rate_limited', status: 429 });
+  it('rejects a busy request before it consumes the distributed limit', async () => {
+    let finishRender!: () => void;
+    renderer.renderPdf.mockImplementationOnce(() => new Promise((resolve) => {
+      finishRender = () => resolve({
+        pdf: new Uint8Array([37, 80, 68, 70]), renderedHtml: request.html, pageCount: 1,
+        pageDimensions: [{ widthPoints: 612, heightPoints: 792 }], sha256: 'a'.repeat(64), markerCount: 0
+      });
+    }));
+    const first = createPdf(request, caller, 'first', 'https://service.example');
+    await vi.waitFor(() => expect(renderer.renderPdf).toHaveBeenCalledOnce());
+
+    await expect(createPdf(request, caller, 'second', 'https://service.example'))
+      .rejects.toMatchObject({ code: 'renderer_busy', status: 429 });
+    expect(firewall.unstable_checkRateLimit).toHaveBeenCalledOnce();
+
+    finishRender();
+    await first;
   });
 });

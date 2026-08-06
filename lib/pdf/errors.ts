@@ -45,6 +45,11 @@ export function errorResponse(
   correlationId?: string
 ): Response {
   const controlled = asServiceError(error);
+  const retryAfter = controlled.code === 'renderer_busy'
+    ? '1'
+    : controlled.code === 'rate_limited'
+      ? '60'
+      : undefined;
   return Response.json(
     {
       error: {
@@ -57,7 +62,11 @@ export function errorResponse(
     },
     {
       status: controlled.status,
-      headers: { 'Cache-Control': 'no-store', 'X-Request-Id': requestId }
+      headers: {
+        'Cache-Control': 'no-store',
+        'X-Request-Id': requestId,
+        ...(retryAfter ? { 'Retry-After': retryAfter } : {})
+      }
     }
   );
 }
