@@ -31,7 +31,16 @@ export async function POST(request: Request): Promise<Response> {
     });
   } catch (error) {
     const controlled = asServiceError(error);
-    logResult({ event: 'pdf_failed', requestId, ...(callerId ? { caller: callerId } : {}), code: controlled.code, status: controlled.status, durationMs: Date.now() - started });
+    logResult({
+      event: 'pdf_failed',
+      requestId,
+      ...(callerId ? { caller: callerId } : {}),
+      code: controlled.code,
+      status: controlled.status,
+      ...(controlled.code === 'renderer_busy' ? { retryAfter: 1 } : {}),
+      ...(controlled.code === 'rate_limited' ? { retryAfter: 60 } : {}),
+      durationMs: Date.now() - started
+    });
     return errorResponse(controlled, requestId, correlationId);
   }
 }

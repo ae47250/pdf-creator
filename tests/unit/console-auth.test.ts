@@ -35,7 +35,7 @@ describe('console authentication', () => {
     expect(isConsoleEnabled(productionEnvironment)).toBe(true);
   });
 
-  it('accepts only the configured password and signs an eight-hour session', () => {
+  it('accepts only the configured password and signs a two-minute session', () => {
     const now = Date.now();
     const session = createConsoleSession(productionEnvironment, now);
     expect(passwordMatches('correct-console-password', productionEnvironment)).toBe(true);

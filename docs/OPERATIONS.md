@@ -49,11 +49,11 @@ The service checks all configured current and previous digests without an early 
 ## Vercel controls
 
 - Function duration: 120 seconds.
-- Define firewall rate-limit IDs `pdf-creation-econplanner`, `pdf-creation-pathfinder`, `pdf-creation-jobsearch`, `pdf-creation-treeservice`, and `pdf-creation-test`.
-- Production callers: 10 render requests per minute. Test caller: 30 per minute. The SDK key is the authenticated caller ID.
+- Define one Firewall SDK rate-limit ID: `pdf-creation`. The authenticated caller ID is `rateLimitKey`, so callers have separate counters.
+- Production: exactly 10 accepted render requests per caller per 60 seconds. Do not increase it without measured evidence and an explicit user decision. Preview may temporarily use 30 per caller per minute for controlled testing.
 - A missing Vercel firewall rule fails closed in Vercel. Local development skips the external firewall check.
 - Keep the testing console disabled in production by omitting `PDF_CREATION_CONSOLE_ENABLED` or setting it to `false`.
-- To enable it in production, set both `PDF_CREATION_CONSOLE_ENABLED=true` and a sensitive `PDF_CREATION_CONSOLE_PASSWORD`. The password gate issues an eight-hour secure, HTTP-only session cookie; neither this password nor `PDF_CREATION_TEST` reaches browser code.
+- To enable it in production, set both `PDF_CREATION_CONSOLE_ENABLED=true` and a sensitive `PDF_CREATION_CONSOLE_PASSWORD`. The password gate issues a two-minute secure, HTTP-only session cookie; neither this password nor `PDF_CREATION_TEST` reaches browser code.
 - Protected previews may set it to `true` without the production password gate.
 - Exclude `/reports/*` from production Deployment Protection. Possession of an unguessable report URL grants access until manifest expiry.
 
@@ -79,8 +79,10 @@ Useful checks:
 
 - `GET /api/health` is public and returns only basic service health.
 - `GET /api/v1/diagnostics` requires an application bearer key and reports versions plus redacted configuration readiness.
-- `renderer_busy` means another Chromium render is active in that function instance.
-- Callers retry transient failures with the same idempotency key. The service does not automatically rerender ambiguous requests.
+- `renderer_busy` means another Chromium render is active in that function instance and returns `Retry-After: 1` before rendering begins.
+- `rate_limited` returns `Retry-After: 60`. Production remains 10 accepted renders per caller per 60 seconds.
+- Callers use no more than five attempts or 15 seconds, retry only `renderer_busy`, and reuse one idempotency key for stored retries. Direct requests never carry an idempotency key and do not retry ambiguous outcomes.
+- EconPlanner, PathFinder, Job Search, and Tree Service each require their own integration, feature-flag fallback, and rollback gate. Service tests alone do not authorize any caller.
 - Keep the previous accepted Vercel deployment available for rollback. Application integrations keep their old renderer behind a flag until acceptance.
 
 ## Preview acceptance
@@ -88,3 +90,7 @@ Useful checks:
 Before production promotion, verify the full checklist from the approved plan: traced bundle size; five cold and twenty warm renders; ten simultaneous requests; no unexpected network activity; fail-closed fonts/images; generic one-page, flowing, and 25-marker fixtures; current fictional PathFinder shadow fixture; PDF structure/text/link/visual comparisons; idempotency races; injected partial R2 failure cleanup; open recipient links; exact 410 expiry; lifecycle cleanup; and log redaction.
 
 Label results as unit tested, locally integrated, mock-storage tested, live Vercel tested, live R2 tested, or not live-verified.
+
+## Change authority
+
+Repository implementation and local tests do not authorize external changes. Publishing or altering Firewall rules, changing Vercel variables, creating buckets or tokens, changing lifecycle rules or Production secrets, writing any Production R2 object, merging, deploying, promoting, or activating an application all require later explicit authorization.

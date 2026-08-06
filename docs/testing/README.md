@@ -56,7 +56,7 @@ Generated PDFs, PNGs, and JSON measurements are written under `test-artifacts/pd
 - Renderer launch timeout and late-browser cleanup
 - Outbound request interception
 - Storage write failures, partial uploads, cleanup errors, and conditional-write races
-- Missing Firewall fallback behavior
+- Missing or invalid Firewall fail-closed behavior
 - High concurrency, browser crashes, local-file attempts, internal-network attempts, and repeated intentional failures
 
 ### Controlled live execution only

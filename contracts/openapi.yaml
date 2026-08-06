@@ -30,7 +30,7 @@ paths:
         "413": { $ref: "#/components/responses/Error" }
         "415": { $ref: "#/components/responses/Error" }
         "422": { $ref: "#/components/responses/Error" }
-        "429": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/RetryableError" }
         "500": { $ref: "#/components/responses/Error" }
         "502": { $ref: "#/components/responses/Error" }
         "503": { $ref: "#/components/responses/Error" }
@@ -43,6 +43,18 @@ components:
   responses:
     Error:
       description: Controlled service error.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    RetryableError:
+      description: Controlled overload response. `renderer_busy` uses Retry-After 1; `rate_limited` uses Retry-After 60.
+      headers:
+        Retry-After:
+          required: true
+          schema: { type: integer, enum: [1, 60] }
+        X-Request-Id:
+          required: true
+          schema: { type: string, format: uuid }
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
