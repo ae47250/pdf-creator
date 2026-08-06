@@ -23,20 +23,22 @@ export async function storeReport(
   const uuid = randomUUID();
   const reportId = `r${retentionDays}_${uuid}`;
   const location = reportLocation(reportId)!;
-  const artifactPrefix = `${callerStoragePrefix(caller.id)}/${location.prefix}`;
+  const artifactPrefix = `${location.prefix}/${callerStoragePrefix(caller.id)}`;
   const createdAt = new Date();
   const expiresAt = new Date(createdAt.getTime() + retentionDays * 86_400_000);
   const pdfKey = `${artifactPrefix}/report.pdf`;
   const htmlKey = `${artifactPrefix}/rendered.html`;
   const manifestKey = `${location.prefix}/manifest.json`;
-  const attempted = [pdfKey, ...(request.storeHtml ? [htmlKey] : [])];
+  const artifactKeys = [pdfKey, ...(request.storeHtml ? [htmlKey] : [])];
   const renderedHtmlBytes = Buffer.from(render.renderedHtml, 'utf8');
 
-  const uploads = [putObject(pdfKey, render.pdf, 'application/pdf')];
-  if (request.storeHtml) uploads.push(putObject(htmlKey, renderedHtmlBytes, 'text/html; charset=utf-8'));
+  const uploads = [putObject(pdfKey, render.pdf, 'application/pdf', { IfNoneMatch: '*' })];
+  if (request.storeHtml) uploads.push(putObject(htmlKey, renderedHtmlBytes, 'text/html; charset=utf-8', { IfNoneMatch: '*' }));
   const results = await Promise.allSettled(uploads);
   if (results.some((result) => result.status === 'rejected')) {
-    await cleanup(attempted);
+    const ambiguousCount = results.filter((result) => result.status === 'rejected' && isAmbiguousWrite(result.reason)).length;
+    if (ambiguousCount) logPossibleOrphan('artifact_write', ambiguousCount);
+    await cleanup(artifactKeys.filter((_, index) => results[index]?.status === 'fulfilled'), 'artifact_write');
     throw new PdfServiceError('storage_failed', 502, 'The report artifacts could not be stored.');
   }
 
@@ -73,10 +75,13 @@ export async function storeReport(
     ...(request.idempotencyKey ? { idempotencyHash: idempotencyHash(caller.id, request.idempotencyKey) } : {})
   };
 
+  let manifestCreated = false;
   try {
     await putObject(manifestKey, JSON.stringify(manifest), 'application/json', { IfNoneMatch: '*' });
-  } catch {
-    await cleanup([...attempted, manifestKey]);
+    manifestCreated = true;
+  } catch (error) {
+    if (isAmbiguousWrite(error)) logPossibleOrphan('manifest_write', 1);
+    else await cleanup(artifactKeys, 'manifest_write');
     throw new PdfServiceError('storage_failed', 502, 'The report manifest could not be stored.');
   }
 
@@ -88,11 +93,12 @@ export async function storeReport(
         expiresAt: expiresAt.toISOString()
       });
       if (!claim.won) {
-        await cleanup([...attempted, manifestKey]);
+        await cleanup([...artifactKeys, ...(manifestCreated ? [manifestKey] : [])], 'idempotency_lost');
         return { manifest: await readManifest(claim.reportId), replayed: true };
       }
     } catch (error) {
-      await cleanup([...attempted, manifestKey]);
+      if (isAmbiguousWrite(error)) logPossibleOrphan('idempotency_claim', 1);
+      else await cleanup([...artifactKeys, ...(manifestCreated ? [manifestKey] : [])], 'idempotency_claim');
       throw error;
     }
   }
@@ -119,6 +125,19 @@ export async function readStoredPdf(manifest: ReportManifest): Promise<Uint8Arra
   return object.bytes;
 }
 
-async function cleanup(keys: string[]): Promise<void> {
-  try { await deleteObjects(keys); } catch { /* retain original storage failure */ }
+async function cleanup(keys: string[], phase: string): Promise<void> {
+  if (keys.length === 0) return;
+  try {
+    await deleteObjects(keys);
+  } catch {
+    console.error(JSON.stringify({ event: 'storage_cleanup_failed', phase, count: keys.length }));
+  }
+}
+
+function isAmbiguousWrite(error: unknown): boolean {
+  return error instanceof PdfServiceError && error.status === 504;
+}
+
+function logPossibleOrphan(phase: string, count: number): void {
+  console.error(JSON.stringify({ event: 'storage_orphan_possible', phase, count }));
 }

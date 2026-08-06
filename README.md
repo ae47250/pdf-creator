@@ -48,6 +48,8 @@ const pdf = Buffer.from(await response.arrayBuffer());
 
 The service can reject a request before rendering with `429 renderer_busy` and `Retry-After: 1`. Calling applications must use the bounded retry and idempotency contract in [Migration](docs/MIGRATION.md). A `429 rate_limited` response uses `Retry-After: 60` and should be returned to the user rather than held open. Production remains limited to 10 accepted render requests per caller per 60 seconds; Preview may use 30 only for controlled verification.
 
+Stored report links are service application routes (`/reports/{reportId}` and `/reports/{reportId}/download`), not presigned R2 URLs.
+
 ## Verification
 
 ```powershell

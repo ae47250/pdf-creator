@@ -14,12 +14,14 @@ describe('repository contracts', () => {
     const openapi = await readFile(new URL('../../contracts/openapi.yaml', import.meta.url), 'utf8');
     expect(openapi).toContain('openapi: 3.1.2');
     expect(openapi).toContain('/api/v1/pdfs:');
+    expect(openapi).toContain('/reports/{reportId}:');
+    expect(openapi).toContain('/reports/{reportId}/download:');
     expect(openapi).toContain('Retry-After:');
     expect(openapi).toContain('renderer_busy` uses Retry-After 1');
     expect(openapi).toContain('$ref: ./pdf-creation.schema.json');
     expect(openapi).not.toContain('renderMode');
     expect(openapi).not.toContain('sourceApp');
-    for (const status of ['415', '422', '502', '503', '504']) {
+    for (const status of ['415', '422', '503', '504']) {
       expect(openapi).toContain(`"${status}": { $ref: "#/components/responses/Error" }`);
     }
   });

@@ -1,6 +1,8 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
+  busyRetryDelayMs,
+  canStartAdmissionRetry,
   extractPdfText,
   latencySummary,
   runTimestamp,
@@ -8,18 +10,22 @@ import {
   writeJson
 } from './pdf-test-utils.mjs';
 
-const baseUrl = (process.env.PDF_CREATION_LIVE_URL || 'https://a-three-coral-41.vercel.app').replace(/\/$/, '');
-const credentialName = process.env.PDF_CREATION_LIVE_KEY ? 'PDF_CREATION_LIVE_KEY' : 'PDF_CREATION_ECONPLANNER';
+const baseUrl = (process.env.PDF_CREATION_PREVIEW_URL || '').replace(/\/$/, '');
+const credentialName = 'PDF_CREATION_PREVIEW_KEY';
 const bearerKey = process.env[credentialName];
-const timeoutMs = boundedNumber(process.env.PDF_CREATION_LIVE_TIMEOUT_MS, 120_000, 10_000, 120_000);
-const maxLatencyMs = boundedNumber(process.env.PDF_CREATION_LIVE_MAX_LATENCY_MS, 45_000, 5_000, 120_000);
-const delayMs = boundedNumber(process.env.PDF_CREATION_LIVE_STAGE_DELAY_MS, 1_500, 500, 10_000);
+const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+const timeoutMs = boundedNumber(process.env.PDF_CREATION_PREVIEW_TIMEOUT_MS, 120_000, 10_000, 120_000);
+const maxLatencyMs = boundedNumber(process.env.PDF_CREATION_PREVIEW_MAX_LATENCY_MS, 30_000, 5_000, 120_000);
+const delayMs = boundedNumber(process.env.PDF_CREATION_PREVIEW_STAGE_DELAY_MS, 1_500, 500, 10_000);
+const roundDelayMs = boundedNumber(process.env.PDF_CREATION_PREVIEW_ROUND_DELAY_MS, 61_000, 61_000, 300_000);
+const admissionDeadlineMs = 15_000;
+const maximumAttempts = 5;
 const outputDirectory = join(process.cwd(), 'test-artifacts', 'pdf-regression', `live-${runTimestamp()}`);
 await mkdir(outputDirectory, { recursive: true });
 
 const summary = {
   kind: 'controlled-live-reliability',
-  liveUrl: baseUrl,
+  target: 'protected-preview',
   testedAt: new Date().toISOString(),
   credentialEnvironmentName: bearerKey ? credentialName : null,
   safety: {
@@ -27,7 +33,9 @@ const summary = {
     maximumConcurrency: 10,
     timeoutMs,
     maximumHealthyLatencyMs: maxLatencyMs,
-    stopOnAnyHttpError: true,
+    maximumAttempts,
+    admissionDeadlineMs,
+    rounds: 3,
     stopOnCorruption: true,
     stopOnContamination: true
   },
@@ -41,11 +49,11 @@ const summary = {
   storageWorkflow: 'not-tested-production-data-safety-boundary'
 };
 
-if (!bearerKey) {
+if (!baseUrl || !bearerKey) {
   summary.stoppedEarly = true;
   summary.stopReason = 'blocked-missing-live-credential';
   await writeJson(join(outputDirectory, 'summary.json'), summary);
-  console.error(`Controlled live tests are blocked. Set PDF_CREATION_LIVE_KEY or PDF_CREATION_ECONPLANNER; no request was sent. Summary: ${join(outputDirectory, 'summary.json')}`);
+  console.error(`Controlled Preview tests are blocked. Set PDF_CREATION_PREVIEW_URL and PDF_CREATION_PREVIEW_KEY; no request was sent. Summary: ${join(outputDirectory, 'summary.json')}`);
   process.exitCode = 2;
 } else {
   try {
@@ -54,18 +62,22 @@ if (!bearerKey) {
     summary.validationChecks.push(await ordinaryValidationCheck('unauthorized', undefined, 401, 'unauthorized'));
     summary.validationChecks.push(await ordinaryValidationCheck('invalid-request', bearerKey, 400, 'invalid_request', {}));
 
-    for (const concurrency of [1, 2, 5, 10]) {
-      const stage = await runStage(concurrency);
-      summary.stages.push(stage);
-      const stopReason = stageStopReason(stage);
-      if (stopReason) {
-        summary.stoppedEarly = concurrency < 10;
-        summary.stopReason = stopReason;
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
-        summary.recovery = await liveRequest(1, 99);
-        break;
+    for (let round = 1; round <= 3; round += 1) {
+      for (const concurrency of [1, 2, 5, 10]) {
+        const stage = await runStage(concurrency, round);
+        summary.stages.push(stage);
+        const stopReason = stageStopReason(stage);
+        if (stopReason) {
+          summary.stoppedEarly = true;
+          summary.stopReason = stopReason;
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          summary.recovery = await liveRequest(1, 99, round);
+          break;
+        }
+        if (concurrency < 10) await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
-      if (concurrency < 10) await new Promise((resolve) => setTimeout(resolve, delayMs));
+      if (summary.stopReason) break;
+      if (round < 3) await new Promise((resolve) => setTimeout(resolve, roundDelayMs));
     }
   } catch (error) {
     summary.stoppedEarly = true;
@@ -91,7 +103,7 @@ if (!bearerKey) {
 
 async function healthCheck() {
   const started = performance.now();
-  const response = await fetch(`${baseUrl}/api/health`, { signal: AbortSignal.timeout(timeoutMs) });
+  const response = await fetch(`${baseUrl}/api/health`, { headers: bypassHeaders(), signal: AbortSignal.timeout(timeoutMs) });
   const body = await response.json();
   if (response.status !== 200 || body?.status !== 'ok') throw new Error(`health-check-failed-${response.status}`);
   return { status: response.status, durationMs: Math.round(performance.now() - started), body };
@@ -99,7 +111,7 @@ async function healthCheck() {
 
 async function diagnosticsCheck() {
   const response = await fetch(`${baseUrl}/api/v1/diagnostics`, {
-    headers: { authorization: `Bearer ${bearerKey}` },
+    headers: requestHeaders(false),
     signal: AbortSignal.timeout(timeoutMs)
   });
   const body = await response.json();
@@ -110,7 +122,10 @@ async function diagnosticsCheck() {
 async function ordinaryValidationCheck(name, key, expectedStatus, expectedCode, payload = livePayload(`validation-${name}`)) {
   const response = await fetch(`${baseUrl}/api/v1/pdfs`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', ...(key ? { authorization: `Bearer ${key}` } : {}) },
+    headers: {
+      'content-type': 'application/json',
+      ...(key ? requestHeaders(false, key) : bypassHeaders())
+    },
     body: JSON.stringify(payload),
     signal: AbortSignal.timeout(timeoutMs)
   });
@@ -121,8 +136,8 @@ async function ordinaryValidationCheck(name, key, expectedStatus, expectedCode, 
   return { name, status: response.status, code: body.error.code, passed: true };
 }
 
-async function runStage(concurrency) {
-  const results = await Promise.all(Array.from({ length: concurrency }, (_, index) => liveRequest(concurrency, index)));
+async function runStage(concurrency, round) {
+  const results = await Promise.all(Array.from({ length: concurrency }, (_, index) => liveRequest(concurrency, index, round)));
   const latencies = results.map((result) => result.durationMs);
   const successful = results.filter((result) => result.status === 200 && result.pdfValid && !result.contamination);
   const timeouts = results.filter((result) => result.timeout).length;
@@ -130,6 +145,7 @@ async function runStage(concurrency) {
   const corrupt = results.filter((result) => result.status === 200 && !result.pdfValid).length;
   return {
     concurrency,
+    round,
     requestCount: results.length,
     successRate: ratio(successful.length, results.length),
     timeoutRate: ratio(timeouts, results.length),
@@ -137,29 +153,74 @@ async function runStage(concurrency) {
     corruptionRate: ratio(corrupt, results.length),
     storageLinkFailureRate: null,
     contamination: results.some((result) => result.contamination),
+    firstAttemptSuccessRate: ratio(results.filter((result) => result.firstAttemptStatus === 200).length, results.length),
+    eventualSuccessRate: ratio(successful.length, results.length),
+    busyResponseCount: results.reduce((sum, result) => sum + result.attempts.filter((attempt) => attempt.errorCode === 'renderer_busy').length, 0),
+    retryExhaustionCount: results.filter((result) => result.retryExhausted).length,
     ...latencySummary(latencies),
     results
   };
 }
 
-async function liveRequest(concurrency, index) {
-  const sentinel = `LIVE-${Date.now()}-C${concurrency}-R${index}`;
+async function liveRequest(concurrency, index, round) {
+  const sentinel = `PREVIEW-${Date.now()}-N${round}-C${concurrency}-R${index}`;
   const started = performance.now();
+  const deadline = started + admissionDeadlineMs;
+  const attempts = [];
+  for (let attempt = 1; attempt <= maximumAttempts; attempt += 1) {
+    if (attempt > 1 && performance.now() >= deadline) {
+      return retryFailure('admission-deadline-exhausted', started, attempts);
+    }
+    const result = await singleAttempt(concurrency, index, round, sentinel, attempt);
+    attempts.push({
+      attempt,
+      status: result.status,
+      durationMs: result.durationMs,
+      errorCode: result.errorCode ?? null,
+      retryAfter: result.retryAfter ?? null
+    });
+    if (result.status === 429 && result.errorCode === 'rate_limited' && result.retryAfter !== '60') {
+      return retryFailure('invalid-rate-limit-retry-after', started, attempts, true);
+    }
+    if (result.status !== 429 || result.errorCode !== 'renderer_busy') {
+      return { ...result, durationMs: Math.round(performance.now() - started), attempts, firstAttemptStatus: attempts[0].status, retryExhausted: false };
+    }
+    if (result.retryAfter !== '1') {
+      return retryFailure('invalid-renderer-busy-retry-after', started, attempts, true);
+    }
+    if (attempt === maximumAttempts) return retryFailure('maximum-attempts-exhausted', started, attempts);
+    const delay = busyRetryDelayMs(attempt);
+    if (!canStartAdmissionRetry(performance.now(), delay, deadline)) return retryFailure('admission-deadline-exhausted', started, attempts);
+    await new Promise((resolve) => setTimeout(resolve, delay));
+  }
+  return retryFailure('maximum-attempts-exhausted', started, attempts);
+}
+
+async function singleAttempt(concurrency, index, round, sentinel, attempt) {
+  const attemptStarted = performance.now();
   try {
     const response = await fetch(`${baseUrl}/api/v1/pdfs`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${bearerKey}` },
+      headers: requestHeaders(true),
       body: JSON.stringify(livePayload(sentinel)),
       signal: AbortSignal.timeout(timeoutMs)
     });
-    const durationMs = Math.round(performance.now() - started);
+    const durationMs = Math.round(performance.now() - attemptStarted);
     if (response.status !== 200) {
       const contentType = response.headers.get('content-type') || '';
       const body = contentType.includes('json') ? await response.json() : null;
-      return { status: response.status, durationMs, timeout: false, pdfValid: false, contamination: false, errorCode: body?.error?.code ?? null };
+      return {
+        status: response.status,
+        durationMs,
+        timeout: false,
+        pdfValid: false,
+        contamination: false,
+        errorCode: body?.error?.code ?? null,
+        retryAfter: response.headers.get('retry-after')
+      };
     }
     const bytes = Buffer.from(await response.arrayBuffer());
-    const pdfPath = join(outputDirectory, `c${concurrency}-r${index}.pdf`);
+    const pdfPath = join(outputDirectory, `n${round}-c${concurrency}-r${index}-a${attempt}.pdf`);
     await writeFile(pdfPath, bytes);
     let pdf;
     let text = '';
@@ -169,7 +230,7 @@ async function liveRequest(concurrency, index) {
     } catch (error) {
       return { status: response.status, durationMs, timeout: false, pdfValid: false, contamination: false, error: error instanceof Error ? error.message : 'pdf-validation-failed' };
     }
-    const contamination = !text.includes(sentinel) || /LIVE-\d+-C\d+-R\d+/.test(text.replace(sentinel, ''));
+    const contamination = !text.includes(sentinel) || /PREVIEW-\d+-N\d+-C\d+-R\d+/.test(text.replace(sentinel, ''));
     return {
       status: response.status,
       durationMs,
@@ -183,7 +244,7 @@ async function liveRequest(concurrency, index) {
     };
   } catch (error) {
     const timeout = error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError');
-    return { status: 0, durationMs: Math.round(performance.now() - started), timeout, pdfValid: false, contamination: false, error: timeout ? 'timeout' : 'network-error' };
+    return { status: 0, durationMs: Math.round(performance.now() - attemptStarted), timeout, pdfValid: false, contamination: false, error: timeout ? 'timeout' : 'network-error' };
   }
 }
 
@@ -200,7 +261,9 @@ function livePayload(sentinel) {
 }
 
 function stageStopReason(stage) {
-  if (stage.results.some((result) => result.status === 429)) return `http-429-at-concurrency-${stage.concurrency}`;
+  if (stage.results.some((result) => result.contractFailure)) return `retry-contract-failure-at-round-${stage.round}-concurrency-${stage.concurrency}`;
+  if (stage.retryExhaustionCount > 0) return `retry-exhaustion-at-round-${stage.round}-concurrency-${stage.concurrency}`;
+  if (stage.results.some((result) => result.status === 429)) return `http-429-at-round-${stage.round}-concurrency-${stage.concurrency}`;
   if (stage.results.some((result) => result.status >= 500)) return `http-5xx-at-concurrency-${stage.concurrency}`;
   if (stage.timeoutRate > 0) return `timeout-at-concurrency-${stage.concurrency}`;
   if (stage.corruptionRate > 0) return `pdf-corruption-at-concurrency-${stage.concurrency}`;
@@ -208,6 +271,34 @@ function stageStopReason(stage) {
   if (stage.maxMs > maxLatencyMs) return `latency-threshold-at-concurrency-${stage.concurrency}`;
   if (stage.httpErrorRate > 0) return `http-error-at-concurrency-${stage.concurrency}`;
   return null;
+}
+
+function retryFailure(reason, started, attempts, contractFailure = false) {
+  return {
+    status: attempts.at(-1)?.status ?? 0,
+    durationMs: Math.round(performance.now() - started),
+    timeout: false,
+    pdfValid: false,
+    contamination: false,
+    error: reason,
+    errorCode: attempts.at(-1)?.errorCode ?? null,
+    attempts,
+    firstAttemptStatus: attempts[0]?.status ?? 0,
+    retryExhausted: true,
+    contractFailure
+  };
+}
+
+function requestHeaders(includeContentType, key = bearerKey) {
+  return {
+    ...(includeContentType ? { 'content-type': 'application/json' } : {}),
+    authorization: `Bearer ${key}`,
+    ...bypassHeaders()
+  };
+}
+
+function bypassHeaders() {
+  return bypassSecret ? { 'x-vercel-protection-bypass': bypassSecret } : {};
 }
 
 function ratio(numerator, denominator) {
