@@ -1,0 +1,440 @@
+{
+  "schemaVersion": 1,
+  "fixtureVersion": "pr-a-v1",
+  "title": "PDF quality audit PR A compact baseline",
+  "profiles": {
+    "pr-a-local": {
+      "lane": "local",
+      "maximumConcurrency": 1,
+      "maximumGetRequests": 0,
+      "maximumPostRequests": 24,
+      "startSpacingMs": 0,
+      "groups": [
+        {
+          "caseIds": [
+            "A-BASIC-01", "A-FLOW-01", "A-FIXED-01", "A-TABLE-01", "A-ASSET-01",
+            "A-TEXT-01", "A-FULL-ACADEMIC-01", "A-FULL-SERVICE-01", "A-FULL-JOB-01",
+            "A-FULL-PATHWAY-01", "A-SEC-SCRIPT-01", "A-SEC-URL-01", "A-SEC-LOCAL-01",
+            "A-UNSUP-MIXED-01", "A-ISO-PAIR-01", "A-DET-BASIC-01", "A-DET-FIXED-01"
+          ],
+          "repetitions": 1
+        }
+      ]
+    },
+    "pr-a-preview": {
+      "lane": "preview",
+      "maximumConcurrency": 1,
+      "maximumGetRequests": 2,
+      "maximumPostRequests": 7,
+      "startSpacingMs": 2000,
+      "groups": [
+        { "caseIds": ["A-BASIC-01", "A-FLOW-01", "A-FIXED-01"], "repetitions": 1 },
+        { "caseIds": ["A-FULL-ACADEMIC-01"], "repetitions": 3 },
+        { "caseIds": ["A-SEC-URL-01"], "repetitions": 1 }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "id": "A-BASIC-01",
+      "title": "Basic one-page Letter PDF",
+      "category": "supported-basic-pdf",
+      "capabilityIds": ["pdf.production", "pdf.structure", "pdf.text", "pdf.metadata", "pdf.visual.basic"],
+      "expectedClass": "supported-and-expected-to-pass",
+      "source": { "path": "tests/fixtures/one-page.html", "sha256": "3c42287536ce410d6c029e8a2145df0b690e6de4a71de74c2a10600682418987" },
+      "request": {
+        "filename": "A_BASIC_01.pdf", "storeResult": false, "storeHtml": false,
+        "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
+        "metadata": { "title": "Synthetic PDF audit A-BASIC-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-BASIC-01", "keywords": ["synthetic", "quality-audit", "a-basic-01"] },
+        "correlationId": "quality-audit-v1:a-basic-01"
+      },
+      "expected": {
+        "responseKind": "pdf", "httpStatus": 200, "contentType": "application/pdf",
+        "pageCount": { "minimum": 1, "maximum": 1 },
+        "pageDimensions": [{ "widthPoints": 612, "heightPoints": 792 }],
+        "requiredText": ["Generic one-page fixture", "This fictional document verifies a simple conversion."],
+        "forbiddenText": ["Application Gold", "Application Blue"],
+        "metadata": { "title": "Synthetic PDF audit A-BASIC-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-BASIC-01", "keywords": ["synthetic", "quality-audit", "a-basic-01"] },
+        "visualReferenceId": "A-BASIC-01-p1",
+        "geometricExpectations": {
+          "allPagesNonblank": true,
+          "perPageRequiredText": [{ "pageNumber": 1, "text": ["Generic one-page fixture", "simple conversion"] }],
+          "informationalNotes": ["The approved page-one reference checks visible placement inside the Letter page bounds."]
+        }
+      },
+      "previewEligible": true,
+      "evidenceRequirements": ["structure", "page-geometry", "text", "metadata", "visual-reference"]
+    },
+    {
+      "id": "A-FLOW-01",
+      "title": "Automatic flowing pagination",
+      "category": "supported-basic-pdf",
+      "capabilityIds": ["pdf.pagination.flow", "pdf.text.order", "pdf.geometry.letter"],
+      "expectedClass": "supported-and-expected-to-pass",
+      "source": { "path": "tests/fixtures/flowing-pages.html", "sha256": "0dfb321f4f9f7f0f0a38828f3c6f668d53f1cbc916be0f0aa26af355ace2283d" },
+      "request": {
+        "filename": "A_FLOW_01.pdf", "storeResult": false, "storeHtml": false,
+        "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
+        "metadata": { "title": "Synthetic PDF audit A-FLOW-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-FLOW-01", "keywords": ["synthetic", "quality-audit", "a-flow-01"] },
+        "correlationId": "quality-audit-v1:a-flow-01"
+      },
+      "expected": {
+        "responseKind": "pdf", "httpStatus": 200, "contentType": "application/pdf",
+        "pageCount": { "minimum": 3, "maximum": 3 },
+        "pageDimensions": [{ "widthPoints": 612, "heightPoints": 792 }],
+        "requiredText": ["Flowing page one", "Flowing page two", "Flowing page three"], "forbiddenText": [],
+        "metadata": { "title": "Synthetic PDF audit A-FLOW-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-FLOW-01", "keywords": ["synthetic", "quality-audit", "a-flow-01"] },
+        "geometricExpectations": {
+          "allPagesNonblank": true,
+          "requiredTextOrder": ["Flowing page one", "Flowing page two", "Flowing page three"],
+          "perPageRequiredText": [
+            { "pageNumber": 1, "text": ["Flowing page one"] },
+            { "pageNumber": 2, "text": ["Flowing page two"] },
+            { "pageNumber": 3, "text": ["Flowing page three"] }
+          ]
+        }
+      },
+      "previewEligible": true,
+      "evidenceRequirements": ["structure", "page-geometry", "text", "metadata"]
+    },
+    {
+      "id": "A-FIXED-01",
+      "title": "Three fixed page markers",
+      "category": "supported-basic-pdf",
+      "capabilityIds": ["pdf.pagination.fixed", "pdf.merge", "pdf.text.order"],
+      "expectedClass": "supported-and-expected-to-pass",
+      "source": { "path": "tests/fixtures/fixed-pages.html", "sha256": "1eca7dc1b55d9757b628859d1f3e7f2856b2f68568a9a55670a6f2977c936ad6" },
+      "request": {
+        "filename": "A_FIXED_01.pdf", "storeResult": false, "storeHtml": false,
+        "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
+        "metadata": { "title": "Synthetic PDF audit A-FIXED-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-FIXED-01", "keywords": ["synthetic", "quality-audit", "a-fixed-01"] },
+        "correlationId": "quality-audit-v1:a-fixed-01"
+      },
+      "expected": {
+        "responseKind": "pdf", "httpStatus": 200, "contentType": "application/pdf",
+        "pageCount": { "minimum": 3, "maximum": 3 }, "pageDimensions": [{ "widthPoints": 612, "heightPoints": 792 }],
+        "requiredText": ["Fixed page one", "Fixed page two", "Fixed page three"], "forbiddenText": [],
+        "metadata": { "title": "Synthetic PDF audit A-FIXED-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-FIXED-01", "keywords": ["synthetic", "quality-audit", "a-fixed-01"] },
+        "geometricExpectations": {
+          "allPagesNonblank": true,
+          "requiredTextOrder": ["Fixed page one", "Fixed page two", "Fixed page three"],
+          "perPageRequiredText": [
+            { "pageNumber": 1, "text": ["Fixed page one"] },
+            { "pageNumber": 2, "text": ["Fixed page two"] },
+            { "pageNumber": 3, "text": ["Fixed page three"] }
+          ]
+        }
+      },
+      "previewEligible": true,
+      "evidenceRequirements": ["structure", "page-geometry", "text", "metadata"]
+    },
+    {
+      "id": "A-TABLE-01",
+      "title": "Long flowing table",
+      "category": "supported-basic-pdf",
+      "capabilityIds": ["pdf.table.pagination", "pdf.table.header-repeat", "pdf.table.wrapping"],
+      "expectedClass": "supported-and-expected-to-pass",
+      "source": { "path": "tests/quality-audit/fixtures/long-table.html", "sha256": "aa146169e66e2a9285f7bffb4832dd346de0622576a28d91aad7dea5793417fa" },
+      "request": {
+        "filename": "A_TABLE_01.pdf", "storeResult": false, "storeHtml": false,
+        "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0.5, "right": 0.5, "bottom": 0.5, "left": 0.5 } },
+        "metadata": { "title": "Synthetic PDF audit A-TABLE-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-TABLE-01", "keywords": ["synthetic", "quality-audit", "a-table-01"] },
+        "correlationId": "quality-audit-v1:a-table-01"
+      },
+      "expected": {
+        "responseKind": "pdf", "httpStatus": 200, "contentType": "application/pdf",
+        "pageCount": { "minimum": 2, "maximum": 8 }, "pageDimensions": [{ "widthPoints": 612, "heightPoints": 792 }],
+        "requiredText": ["Synthetic Long Table Benchmark", "Row 01", "Row 60", "138.4"], "forbiddenText": [],
+        "metadata": { "title": "Synthetic PDF audit A-TABLE-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-TABLE-01", "keywords": ["synthetic", "quality-audit", "a-table-01"] },
+        "visualReferenceId": "A-TABLE-01-p2",
+        "geometricExpectations": {
+          "allPagesNonblank": true,
+          "requiredTextOrder": ["Row 01", "Row 21", "Row 44", "Row 60"],
+          "repeatTextOnEveryPage": ["Observation", "Fictional value", "Review note"],
+          "perPageRequiredText": [{ "pageNumber": 2, "text": ["Row 21", "Row 43"] }],
+          "informationalNotes": ["The approved page-two reference checks representative wrapping and numeric alignment; broader table coverage is deferred."]
+        }
+      },
+      "previewEligible": false,
+      "evidenceRequirements": ["structure", "page-geometry", "text", "metadata", "visual-reference"]
+    },
+    {
+      "id": "A-ASSET-01",
+      "title": "Embedded assets on A4 landscape",
+      "category": "supported-basic-pdf",
+      "capabilityIds": ["pdf.asset.data-url", "pdf.svg", "pdf.css.background", "pdf.geometry.a4-landscape"],
+      "expectedClass": "supported-and-expected-to-pass",
+      "source": { "path": "tests/quality-audit/fixtures/inline-assets-a4-landscape.html", "sha256": "bb32c8d51fa42b571b1d0e4bfeda9e2c98820748c933ada978f869bb9d8a4e98" },
+      "request": {
+        "filename": "A_ASSET_01.pdf", "storeResult": false, "storeHtml": false,
+        "page": { "format": "A4", "orientation": "landscape", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
+        "metadata": { "title": "Synthetic PDF audit A-ASSET-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-ASSET-01", "keywords": ["synthetic", "quality-audit", "a-asset-01"] },
+        "correlationId": "quality-audit-v1:a-asset-01"
+      },
+      "expected": {
+        "responseKind": "pdf", "httpStatus": 200, "contentType": "application/pdf",
+        "pageCount": { "minimum": 1, "maximum": 1 }, "pageDimensions": [{ "widthPoints": 841.89, "heightPoints": 595.28 }],
+        "requiredText": ["Embedded Assets and Backgrounds", "First index", "Third index", "A4 landscape"], "forbiddenText": [],
+        "metadata": { "title": "Synthetic PDF audit A-ASSET-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-ASSET-01", "keywords": ["synthetic", "quality-audit", "a-asset-01"] },
+        "visualReferenceId": "A-ASSET-01-p1",
+        "geometricExpectations": {
+          "allPagesNonblank": true,
+          "perPageRequiredText": [{ "pageNumber": 1, "text": ["Synthetic quarterly index", "First index", "Third index", "A4 landscape - page 1 of 1"] }],
+          "informationalNotes": ["The approved page-one reference checks chart aspect ratio, cards, footer, and landscape-page bounds."]
+        }
+      },
+      "previewEligible": false,
+      "evidenceRequirements": ["structure", "page-geometry", "text", "metadata", "visual-reference"]
+    },
+    {
+      "id": "A-TEXT-01",
+      "title": "Basic international text",
+      "category": "supported-basic-pdf",
+      "capabilityIds": ["pdf.text.unicode", "pdf.text.searchable"],
+      "expectedClass": "supported-and-expected-to-pass",
+      "source": { "path": "tests/quality-audit/fixtures/unicode-text.html", "sha256": "9a7ebd5afb2f956c20b195b763de8d42ff2b3fb416f876d2a58f32f2cb86e37e" },
+      "request": {
+        "filename": "A_TEXT_01.pdf", "storeResult": false, "storeHtml": false,
+        "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0.65, "right": 0.65, "bottom": 0.65, "left": 0.65 } },
+        "metadata": { "title": "Synthetic PDF audit A-TEXT-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-TEXT-01", "keywords": ["synthetic", "quality-audit", "a-text-01"] },
+        "correlationId": "quality-audit-v1:a-text-01"
+      },
+      "expected": {
+        "responseKind": "pdf", "httpStatus": 200, "contentType": "application/pdf",
+        "pageCount": { "minimum": 1, "maximum": 1 }, "pageDimensions": [{ "widthPoints": 612, "heightPoints": 792 }],
+        "requiredText": ["Español", "Αθήνα", "Москва", "GDPₜ", "€", "£", "¥"], "forbiddenText": ["�"],
+        "metadata": { "title": "Synthetic PDF audit A-TEXT-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-TEXT-01", "keywords": ["synthetic", "quality-audit", "a-text-01"] },
+        "geometricExpectations": {
+          "allPagesNonblank": true,
+          "perPageRequiredText": [{ "pageNumber": 1, "text": ["Español", "Αθήνα", "Москва", "GDPₜ", "€ £ ¥"] }],
+          "informationalNotes": ["This PR A case proves searchable extracted text and one-page placement; broader reviewed glyph/font coverage is deferred to PR B."]
+        }
+      },
+      "previewEligible": false,
+      "evidenceRequirements": ["structure", "page-geometry", "text", "metadata"]
+    },
+    {
+      "id": "A-FULL-ACADEMIC-01",
+      "title": "Synthetic academic plan",
+      "category": "supported-basic-pdf",
+      "capabilityIds": ["pdf.document.academic", "pdf.pagination.fixed", "pdf.table"],
+      "expectedClass": "supported-and-expected-to-pass",
+      "source": { "path": "tests/quality-audit/fixtures/synthetic-academic-plan.html", "sha256": "c3c1c34f48043d1c31d8289254577ac0e16ad40b65ab3d6cc877451fa68af869" },
+      "request": {
+        "filename": "A_FULL_ACADEMIC_01.pdf", "storeResult": false, "storeHtml": false,
+        "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
+        "metadata": { "title": "Synthetic PDF audit A-FULL-ACADEMIC-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-FULL-ACADEMIC-01", "keywords": ["synthetic", "quality-audit", "a-full-academic-01"] },
+        "correlationId": "quality-audit-v1:a-full-academic-01"
+      },
+      "expected": {
+        "responseKind": "pdf", "httpStatus": 200, "contentType": "application/pdf",
+        "pageCount": { "minimum": 3, "maximum": 3 }, "pageDimensions": [{ "widthPoints": 612, "heightPoints": 792 }],
+        "requiredText": ["Northwind Learning Plan", "Term Sequence", "Page 3 of 3", "not based on a real student"], "forbiddenText": [],
+        "metadata": { "title": "Synthetic PDF audit A-FULL-ACADEMIC-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-FULL-ACADEMIC-01", "keywords": ["synthetic", "quality-audit", "a-full-academic-01"] },
+        "geometricExpectations": {
+          "allPagesNonblank": true,
+          "requiredTextOrder": ["Northwind Learning Plan", "Term Sequence", "Review Notes"],
+          "perPageRequiredText": [
+            { "pageNumber": 1, "text": ["Northwind Learning Plan", "Planning objective"] },
+            { "pageNumber": 2, "text": ["Term Sequence", "SYS 310 - Program Evaluation"] },
+            { "pageNumber": 3, "text": ["Review Notes", "Page 3 of 3"] }
+          ]
+        }
+      },
+      "previewEligible": true,
+      "evidenceRequirements": ["structure", "page-geometry", "text", "metadata"]
+    },
+    {
+      "id": "A-FULL-SERVICE-01",
+      "title": "Synthetic service estimate",
+      "category": "supported-basic-pdf",
+      "capabilityIds": ["pdf.document.service", "pdf.pagination.fixed", "pdf.currency"],
+      "expectedClass": "supported-and-expected-to-pass",
+      "source": { "path": "tests/quality-audit/fixtures/synthetic-service-estimate.html", "sha256": "27c017caff8e66034c1d86ae3eb25d161aa313f5d826a9dbcf2a439cbf45a025" },
+      "request": {
+        "filename": "A_FULL_SERVICE_01.pdf", "storeResult": false, "storeHtml": false,
+        "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
+        "metadata": { "title": "Synthetic PDF audit A-FULL-SERVICE-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-FULL-SERVICE-01", "keywords": ["synthetic", "quality-audit", "a-full-service-01"] },
+        "correlationId": "quality-audit-v1:a-full-service-01"
+      },
+      "expected": {
+        "responseKind": "pdf", "httpStatus": 200, "contentType": "application/pdf",
+        "pageCount": { "minimum": 2, "maximum": 2 }, "pageDimensions": [{ "widthPoints": 612, "heightPoints": 792 }],
+        "requiredText": ["Site Care Estimate F-1042", "$1,110.00", "Scope and Acceptance", "Page 2 of 2"], "forbiddenText": [],
+        "metadata": { "title": "Synthetic PDF audit A-FULL-SERVICE-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-FULL-SERVICE-01", "keywords": ["synthetic", "quality-audit", "a-full-service-01"] },
+        "geometricExpectations": {
+          "allPagesNonblank": true,
+          "requiredTextOrder": ["Site Care Estimate F-1042", "Scope and Acceptance"],
+          "perPageRequiredText": [
+            { "pageNumber": 1, "text": ["Site Care Estimate F-1042", "$1,110.00"] },
+            { "pageNumber": 2, "text": ["Scope and Acceptance", "Page 2 of 2"] }
+          ]
+        }
+      },
+      "previewEligible": false,
+      "evidenceRequirements": ["structure", "page-geometry", "text", "metadata"]
+    },
+    {
+      "id": "A-FULL-JOB-01",
+      "title": "Synthetic ranked job report",
+      "category": "supported-basic-pdf",
+      "capabilityIds": ["pdf.document.job", "pdf.link.https", "pdf.table"],
+      "expectedClass": "supported-and-expected-to-pass",
+      "source": { "path": "tests/quality-audit/fixtures/synthetic-job-match.html", "sha256": "166a8972c1c84c8d4056afac516117ef2a67929487252331fe6d94e063d2e964" },
+      "request": {
+        "filename": "A_FULL_JOB_01.pdf", "storeResult": false, "storeHtml": false,
+        "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
+        "metadata": { "title": "Synthetic PDF audit A-FULL-JOB-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-FULL-JOB-01", "keywords": ["synthetic", "quality-audit", "a-full-job-01"] },
+        "correlationId": "quality-audit-v1:a-full-job-01"
+      },
+      "expected": {
+        "responseKind": "pdf", "httpStatus": 200, "contentType": "application/pdf",
+        "pageCount": { "minimum": 2, "maximum": 2 }, "pageDimensions": [{ "widthPoints": 612, "heightPoints": 792 }],
+        "requiredText": ["Ranked Opportunity Review", "92% match", "Requirement Comparison", "Page 2 of 2"], "forbiddenText": [],
+        "metadata": { "title": "Synthetic PDF audit A-FULL-JOB-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-FULL-JOB-01", "keywords": ["synthetic", "quality-audit", "a-full-job-01"] },
+        "geometricExpectations": {
+          "allPagesNonblank": true,
+          "requiredTextOrder": ["Ranked Opportunity Review", "Requirement Comparison"],
+          "perPageRequiredText": [
+            { "pageNumber": 1, "text": ["Ranked Opportunity Review", "92% match"] },
+            { "pageNumber": 2, "text": ["Requirement Comparison", "synthetic-opportunities/research-operations"] }
+          ]
+        }
+      },
+      "previewEligible": false,
+      "evidenceRequirements": ["structure", "page-geometry", "text", "metadata"]
+    },
+    {
+      "id": "A-FULL-PATHWAY-01",
+      "title": "Synthetic career pathway",
+      "category": "supported-basic-pdf",
+      "capabilityIds": ["pdf.document.pathway", "pdf.link.internal", "pdf.pagination.fixed", "pdf.visual.cards"],
+      "expectedClass": "supported-and-expected-to-pass",
+      "source": { "path": "tests/quality-audit/fixtures/synthetic-career-pathway.html", "sha256": "8d9b2b3166ecd1e0f412cd68f6b54228366ec6e4c944df1b7872cb92aa726ea1" },
+      "request": {
+        "filename": "A_FULL_PATHWAY_01.pdf", "storeResult": false, "storeHtml": false,
+        "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
+        "metadata": { "title": "Synthetic PDF audit A-FULL-PATHWAY-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-FULL-PATHWAY-01", "keywords": ["synthetic", "quality-audit", "a-full-pathway-01"] },
+        "correlationId": "quality-audit-v1:a-full-pathway-01"
+      },
+      "expected": {
+        "responseKind": "pdf", "httpStatus": 200, "contentType": "application/pdf",
+        "pageCount": { "minimum": 4, "maximum": 4 }, "pageDimensions": [{ "widthPoints": 612, "heightPoints": 792 }],
+        "requiredText": ["Evidence to Impact Pathway", "Leadership Evidence", "Review and Next Step", "Page 4 of 4"], "forbiddenText": [],
+        "metadata": { "title": "Synthetic PDF audit A-FULL-PATHWAY-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-FULL-PATHWAY-01", "keywords": ["synthetic", "quality-audit", "a-full-pathway-01"] },
+        "visualReferenceId": "A-FULL-PATHWAY-01-p1",
+        "geometricExpectations": {
+          "allPagesNonblank": true,
+          "requiredTextOrder": ["Evidence to Impact Pathway", "Foundation and Practice", "Leadership Evidence", "Review and Next Step"],
+          "perPageRequiredText": [
+            { "pageNumber": 1, "text": ["Evidence to Impact Pathway", "Pathway map", "Page 1 of 4"] },
+            { "pageNumber": 2, "text": ["Foundation and Practice", "Page 2 of 4"] },
+            { "pageNumber": 3, "text": ["Leadership Evidence", "Page 3 of 4"] },
+            { "pageNumber": 4, "text": ["Review and Next Step", "Page 4 of 4"] }
+          ],
+          "informationalNotes": ["The approved page-one reference checks dense card placement and footer clearance on the first page."]
+        }
+      },
+      "previewEligible": false,
+      "evidenceRequirements": ["structure", "page-geometry", "text", "metadata", "visual-reference"]
+    },
+    {
+      "id": "A-SEC-SCRIPT-01",
+      "title": "Documented script rejection",
+      "category": "intentional-policy-rejection",
+      "capabilityIds": ["security.script-rejection"],
+      "expectedClass": "intentionally-rejected-by-documented-policy",
+      "source": { "path": "tests/fixtures/one-page.html", "sha256": "3c42287536ce410d6c029e8a2145df0b690e6de4a71de74c2a10600682418987", "mutation": "script" },
+      "request": {
+        "filename": "A_SEC_SCRIPT_01.pdf", "storeResult": false, "storeHtml": false,
+        "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
+        "metadata": { "title": "Synthetic PDF audit A-SEC-SCRIPT-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-SEC-SCRIPT-01", "keywords": ["synthetic", "quality-audit", "a-sec-script-01"] },
+        "correlationId": "quality-audit-v1:a-sec-script-01"
+      },
+      "expected": { "responseKind": "error", "httpStatus": 400, "serviceErrorCode": "unsafe_html", "requiredText": [], "forbiddenText": ["<script>"] },
+      "previewEligible": false,
+      "evidenceRequirements": ["policy-response"]
+    },
+    {
+      "id": "A-SEC-URL-01",
+      "title": "Documented external-resource rejection",
+      "category": "intentional-policy-rejection",
+      "capabilityIds": ["security.external-resource-rejection"],
+      "expectedClass": "intentionally-rejected-by-documented-policy",
+      "source": { "path": "tests/fixtures/one-page.html", "sha256": "3c42287536ce410d6c029e8a2145df0b690e6de4a71de74c2a10600682418987", "mutation": "external-url" },
+      "request": {
+        "filename": "A_SEC_URL_01.pdf", "storeResult": false, "storeHtml": false,
+        "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
+        "metadata": { "title": "Synthetic PDF audit A-SEC-URL-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-SEC-URL-01", "keywords": ["synthetic", "quality-audit", "a-sec-url-01"] },
+        "correlationId": "quality-audit-v1:a-sec-url-01"
+      },
+      "expected": { "responseKind": "error", "httpStatus": 400, "serviceErrorCode": "unsafe_html", "requiredText": [], "forbiddenText": ["example.invalid"] },
+      "previewEligible": true,
+      "evidenceRequirements": ["policy-response"]
+    },
+    {
+      "id": "A-SEC-LOCAL-01",
+      "title": "Documented local-file rejection",
+      "category": "intentional-policy-rejection",
+      "capabilityIds": ["security.local-file-rejection"],
+      "expectedClass": "intentionally-rejected-by-documented-policy",
+      "source": { "path": "tests/fixtures/one-page.html", "sha256": "3c42287536ce410d6c029e8a2145df0b690e6de4a71de74c2a10600682418987", "mutation": "local-file-url" },
+      "request": {
+        "filename": "A_SEC_LOCAL_01.pdf", "storeResult": false, "storeHtml": false,
+        "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
+        "metadata": { "title": "Synthetic PDF audit A-SEC-LOCAL-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-SEC-LOCAL-01", "keywords": ["synthetic", "quality-audit", "a-sec-local-01"] },
+        "correlationId": "quality-audit-v1:a-sec-local-01"
+      },
+      "expected": { "responseKind": "error", "httpStatus": 400, "serviceErrorCode": "unsafe_html", "requiredText": [], "forbiddenText": ["file:"] },
+      "previewEligible": false,
+      "evidenceRequirements": ["policy-response"]
+    },
+    {
+      "id": "A-UNSUP-MIXED-01",
+      "title": "Mixed page orientation capability probe",
+      "category": "unsupported-capability",
+      "capabilityIds": ["pdf.page.mixed-orientation"],
+      "expectedClass": "unsupported-feature",
+      "source": { "path": "tests/fixtures/fixed-pages.html", "sha256": "1eca7dc1b55d9757b628859d1f3e7f2856b2f68568a9a55670a6f2977c936ad6", "mutation": "mixed-orientation-css" },
+      "request": {
+        "filename": "A_UNSUP_MIXED_01.pdf", "storeResult": false, "storeHtml": false,
+        "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
+        "metadata": { "title": "Synthetic PDF audit A-UNSUP-MIXED-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-UNSUP-MIXED-01", "keywords": ["synthetic", "quality-audit", "a-unsup-mixed-01"] },
+        "correlationId": "quality-audit-v1:a-unsup-mixed-01"
+      },
+      "expected": { "responseKind": "unsupported-observation", "httpStatus": [200, 500], "requiredText": [], "forbiddenText": [], "geometricExpectations": { "informationalNotes": ["Current request contract exposes only one format and orientation.", "Uniform output does not prove mixed-orientation support."] } },
+      "previewEligible": false,
+      "evidenceRequirements": ["structure", "page-geometry"]
+    },
+    {
+      "id": "A-ISO-PAIR-01",
+      "title": "Alternating synthetic application isolation",
+      "category": "isolation",
+      "capabilityIds": ["pdf.isolation.content", "pdf.isolation.metadata", "pdf.isolation.style"],
+      "expectedClass": "supported-and-expected-to-pass",
+      "scenario": { "type": "alternating-isolation", "sourceCaseIds": ["A-FULL-SERVICE-01", "A-FULL-JOB-01"], "sequence": ["A-FULL-SERVICE-01", "A-FULL-JOB-01", "A-FULL-SERVICE-01", "A-FULL-JOB-01"] },
+      "previewEligible": false,
+      "evidenceRequirements": ["isolation"]
+    },
+    {
+      "id": "A-DET-BASIC-01",
+      "title": "Basic semantic repeatability",
+      "category": "repeatability",
+      "capabilityIds": ["pdf.repeatability.semantic", "pdf.repeatability.visual"],
+      "expectedClass": "supported-and-expected-to-pass",
+      "scenario": { "type": "repeat", "sourceCaseId": "A-BASIC-01", "repetitions": 3 },
+      "previewEligible": false,
+      "evidenceRequirements": ["repeatability"]
+    },
+    {
+      "id": "A-DET-FIXED-01",
+      "title": "Fixed-page semantic repeatability",
+      "category": "repeatability",
+      "capabilityIds": ["pdf.repeatability.semantic", "pdf.repeatability.pagination"],
+      "expectedClass": "supported-and-expected-to-pass",
+      "scenario": { "type": "repeat", "sourceCaseId": "A-FIXED-01", "repetitions": 3 },
+      "previewEligible": false,
+      "evidenceRequirements": ["repeatability"]
+    }
+  ]
+}
