@@ -79,6 +79,12 @@ review record, fixed source/image hashes, and a deliberate pull-request diff.
 The runner only writes candidates to ignored artifacts and cannot approve or
 update a reference. This prevents accidental baseline acceptance.
 
+When a fixture or caller requires visually repeatable typography across local
+and Vercel environments, it must embed or otherwise supply its own pinned font
+files. `A-BASIC-01` demonstrates this with a compact, open-licensed Open Sans
+v44 Latin WOFF2 `data:` font. The service does not set a service-wide default
+font and does not rewrite caller HTML; external font URLs remain disallowed.
+
 Comparing two new outputs from the service establishes repeatability only. It
 does not establish correctness. The result labels byte, structural, text, and
 raster repeatability separately from comparison with a reviewed reference.

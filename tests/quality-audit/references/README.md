@@ -26,3 +26,10 @@ frozen in a later deliberate change.
 Visual repeatability is separate evidence. Matching two fresh outputs shows
 only that the implementation repeated itself; it does not prove correctness.
 Correctness requires an approved reference or explicit checked geometry.
+
+`A-BASIC-01` additionally embeds its reviewed, open-licensed Open Sans v44
+Latin WOFF2 through a `data:` URL. The vendored source, checksum, and SIL Open
+Font License attribution are in `tests/quality-audit/fonts/open-sans-v44/`.
+This is a fixture-level contract: callers that require visually repeatable
+typography must embed or otherwise provide their pinned font files. The PDF
+service does not impose a service-wide default font or change caller HTML.

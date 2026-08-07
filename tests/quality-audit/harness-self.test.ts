@@ -107,6 +107,7 @@ describe('PDF quality audit harness self-tests', () => {
 
     const localPlan = buildExecutionPlan(loaded.manifest, 'pr-a-local');
     const previewPlan = buildExecutionPlan(loaded.manifest, 'pr-a-preview');
+    const remediationPreviewPlan = buildExecutionPlan(loaded.manifest, 'pr-a-preview-basic-remediation');
 
     expect(localPlan).toHaveLength(24);
     expect(previewPlan).toHaveLength(7);
@@ -118,6 +119,19 @@ describe('PDF quality audit harness self-tests', () => {
       'A-FULL-ACADEMIC-01',
       'A-FULL-ACADEMIC-01',
       'A-SEC-URL-01'
+    ]);
+    expect(loaded.manifest.profiles['pr-a-preview-basic-remediation']).toMatchObject({
+      lane: 'preview',
+      maximumConcurrency: 1,
+      maximumGetRequests: 2,
+      maximumPostRequests: 4,
+      startSpacingMs: 2_000
+    });
+    expect(remediationPreviewPlan.map((execution) => execution.caseId)).toEqual([
+      'A-BASIC-01',
+      'A-BASIC-01',
+      'A-BASIC-01',
+      'A-FLOW-01'
     ]);
   });
 

@@ -61,10 +61,11 @@ async function runPreflight(profileName) {
 }
 
 async function runProfile(profileName) {
-  if (profileName !== 'pr-a-preview') {
-    throw new Error('The command-line runner is restricted to pr-a-preview. Use npm run audit:core for the real local route seam.');
-  }
   const loaded = await loadAuditManifest({ rootDir });
+  const previewSpec = previewProfileSpec(profileName);
+  if (!loaded.manifest.profiles[profileName] || loaded.manifest.profiles[profileName].lane !== 'preview') {
+    throw new Error('The command-line runner is restricted to explicitly bounded Preview profiles. Use npm run audit:core for the real local route seam.');
+  }
   const preflight = await collectToolPreflight({ rootDir });
   const outputDirectory = path.join(artifactRoot, `${profileName}-${runTimestamp()}`);
   await mkdir(outputDirectory, { recursive: true });
@@ -137,17 +138,18 @@ async function runProfile(profileName) {
       preview: {
         target: 'protected-vercel-preview',
         getRequests: 2,
-        maximumPostRequests: 7,
-        maximumTotalRequests: 9,
+        maximumPostRequests: previewSpec.maximumPostRequests,
+        maximumTotalRequests: previewSpec.maximumPostRequests + 2,
         maximumConcurrency: 1,
-        repeatCount: { 'A-FULL-ACADEMIC-01': 3 },
+        repeatCount: previewSpec.repeatCount,
+        fixtureSequence: previewSpec.fixtureSequence,
         startSpacingMs: 2_000,
         retryPolicy: 'none',
         maximumInputRequestBytes: 100_000,
         maximumOutputPdfBytes: 4_000_000,
-        estimatedRuntime: 'Approximately 3-15 minutes, bounded by seven sequential 120-second request timeouts plus six 2-second start spacings.',
-        coldWarmMethod: 'No platform restart is forced. The first A-FULL-ACADEMIC-01 request is labeled cold-eligible first observation; its next two sequential executions are warm-eligible repeat observations. Actual Vercel instance reuse is not claimed.',
-        failedRequestBudget: 'Every initiated POST consumes one of seven slots regardless of HTTP status, timeout, corruption, or quality result; no retry is permitted.',
+        estimatedRuntime: previewSpec.estimatedRuntime,
+        coldWarmMethod: previewSpec.coldWarmMethod,
+        failedRequestBudget: `Every initiated POST consumes one of ${previewSpec.maximumPostRequests} slots regardless of HTTP status, timeout, corruption, or quality result; no retry is permitted.`,
         authentication: 'Bearer key and optional Deployment Protection bypass are read from environment variables and never persisted or printed.',
         storage: 'storeResult:false and storeHtml:false',
         safetyStopConditions: ['safety-risk', 'authorization-boundary', 'credential-problem', 'cost-limit', 'request-budget-limit', 'platform-protection', 'external-service-restriction', 'genuine-technical-impossibility'],
@@ -165,6 +167,28 @@ async function runProfile(profileName) {
     outputDirectory,
     reportPath
   }, null, 2));
+}
+
+function previewProfileSpec(profileName) {
+  const specs = {
+    'pr-a-preview': {
+      maximumPostRequests: 7,
+      repeatCount: { 'A-FULL-ACADEMIC-01': 3 },
+      fixtureSequence: ['A-BASIC-01', 'A-FLOW-01', 'A-FIXED-01', 'A-FULL-ACADEMIC-01', 'A-FULL-ACADEMIC-01', 'A-FULL-ACADEMIC-01', 'A-SEC-URL-01'],
+      estimatedRuntime: 'Approximately 3-15 minutes, bounded by seven sequential 120-second request timeouts plus six 2-second start spacings.',
+      coldWarmMethod: 'No platform restart is forced. The first A-FULL-ACADEMIC-01 request is labeled cold-eligible first observation; its next two sequential executions are warm-eligible repeat observations. Actual Vercel instance reuse is not claimed.'
+    },
+    'pr-a-preview-basic-remediation': {
+      maximumPostRequests: 4,
+      repeatCount: { 'A-BASIC-01': 3 },
+      fixtureSequence: ['A-BASIC-01', 'A-BASIC-01', 'A-BASIC-01', 'A-FLOW-01'],
+      estimatedRuntime: 'Approximately 2-9 minutes, bounded by four sequential 120-second request timeouts plus three 2-second start spacings.',
+      coldWarmMethod: 'No platform restart is forced. The three sequential A-BASIC-01 requests measure Preview repeatability; A-FLOW-01 is a one-run unrelated-fixture control. Actual Vercel instance reuse is not claimed.'
+    }
+  };
+  const spec = specs[profileName];
+  if (!spec) throw new Error(`Unsupported Preview audit profile: ${profileName}`);
+  return spec;
 }
 
 async function previewSafetyPreflight({ origin, bearerKey, bypassSecret }) {

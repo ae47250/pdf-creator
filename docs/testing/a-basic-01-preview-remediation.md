@@ -10,15 +10,17 @@ any R2 object.
 
 ## Result
 
-`A-BASIC-01` is structurally correct in the recorded Preview response, but it
-does not exactly match the compact local approved raster. The difference is a
-deterministic renderer/font-environment difference, not evidence of missing
-content, page-size drift, metadata drift, an artifact-selection problem, or a
-confirmed service-layout defect.
+The original Preview mismatch was a deterministic local-Arial/Preview-Open
+Sans substitution. Under the user-approved pinned-font solution,
+`A-BASIC-01` now embeds one compact Open Sans v44 Latin WOFF2 locally as a
+`data:` URL and explicitly uses its 400 and 700 weights. This is a fixture-only
+correction; the service renderer and caller HTML are unchanged.
 
-The approved reference remains valid for the local renderer. Whether it should
-also be the exact Preview oracle requires an explicit review decision; this
-investigation does not replace it or label the Preview result acceptable.
+A new candidate was deliberately reviewed before approval and replaces only the
+`A-BASIC-01` compact reference. It is structurally correct and the locally
+generated ordinary run plus three repeat runs have identical raster evidence.
+Preview confirmation remains required; this local approval is not a claim that
+the deployed service has already passed.
 
 ## Evidence
 
@@ -45,8 +47,13 @@ local reference ends at x=288.74 points; Preview paragraph text begins at
 y=64.42 points while the local reference begins at y=59.64 points.
 
 The local route seam ran one ordinary `A-BASIC-01` execution plus three
-`A-DET-BASIC-01` repetitions. All four rendered rasters exactly matched the
-approved reference. The three repeat runs had identical semantic structure,
+`A-DET-BASIC-01` repetitions from the pinned-font fixture. Before the reference
+update, all four produced candidate raster
+`7cae94affafb3eebf7be7e32a6379b554bf01a7e96a4bee71334071dd9172ea0`.
+The candidate was viewed at original resolution: the heading and paragraph are
+ordered, legible, unwrapped, within the Letter-page margins, and have no
+clipping or unexpected content. Required text, one-page geometry, and metadata
+were also verified. The three repeat runs had identical semantic structure,
 text, and raster hashes; their PDF byte hashes differed only because volatile
 PDF metadata is intentionally excluded from correctness. This establishes
 local repeatability, not universal visual correctness.
@@ -68,22 +75,21 @@ reference PNGs, review status, or expected rendering behavior. The existing
 complete core audit now verifies the corrected records while exercising all
 fixtures.
 
-## Decision required before visual changes
+## Approved pinned-font correction
 
-No tolerance has been calibrated and no reference is objectively shown to be
-wrong. Please choose and explicitly approve one future direction before any
-visual-reference change:
+The fixture uses the official Google Fonts Open Sans v44 Latin variable WOFF2,
+which the official CSS serves for both requested 400 and 700 weights. Vendoring
+one 48,320-byte file avoids duplicating identical bytes. Its SHA-256 is
+`d8e4fe0452aa2076429a9bb5d8757d00a994dd95986cf950e9a1a371b9a072a0`.
+The associated SIL Open Font License 1.1, attribution, upstream URLs, and
+license hash are committed beside it under
+`tests/quality-audit/fonts/open-sans-v44/`.
 
-1. Provide a compact, licensed, pinned font resource that both local and Vercel
-   Preview can use; then review a newly rendered reference deliberately.
-2. Approve an environment-specific, compact Vercel Preview reference through
-   the existing review-ledger process.
-3. Authorize repeated controlled measurements to propose a calibrated,
-   reporting-only visual tolerance. A tolerance must be reviewed separately and
-   must not turn this current mismatch into an automatic pass.
-
-Until then, the existing Preview mismatch remains an accurately reported
-nonblocking finding.
+No exact-comparison tolerance was weakened or added. The updated reference
+review record includes the deliberate visual inspection, tool versions, fixture
+hash, image hash, and font provenance. A remaining Preview mismatch must still
+be reported as a mismatch; it cannot be hidden through replacement or a
+tolerance relaxation.
 
 ## Proposed Preview confirmation after review
 

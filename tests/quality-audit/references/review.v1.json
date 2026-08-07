@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "referenceSet": "pr-a-v1",
+  "referenceSet": "pr-a-v1-pinned-font",
   "status": "approved",
   "approvedAt": "2026-08-07T04:01:00.000Z",
   "approvedBy": "Codex PR A implementation review",
@@ -13,6 +13,37 @@
     "poppler": "25.07.0",
     "resolutionDpi": 120
   },
+  "reviewHistory": [
+    {
+      "id": "A-BASIC-01-pinned-open-sans-v44",
+      "reviewedAt": "2026-08-07T07:14:53.305Z",
+      "reviewedBy": "Codex pinned-font remediation review under user-approved option 1",
+      "reason": "Replace the local-Arial/Preview-Open-Sans font substitution with the same embedded Open Sans v44 Latin WOFF2 for both environments.",
+      "candidateArtifact": "ignored test-artifacts/pdf-quality-audit/pr-a-local-vitest-34540-1786086755505/visual/A-BASIC-01-p1.png",
+      "serviceCommit": "f0411f36a909509a91fc5f62f59386bfd62903ee",
+      "operatingSystem": "Windows 11 10.0.26100 x64",
+      "browser": "Microsoft Edge 151.0.4129.59",
+      "poppler": "25.07.0",
+      "resolutionDpi": 120,
+      "fixtureSha256": "9368e98a179d33925abc062e997c5ecc1de5a74e7d1d1af0576e1f91f382cbc3",
+      "imageSha256": "7cae94affafb3eebf7be7e32a6379b554bf01a7e96a4bee71334071dd9172ea0",
+      "font": {
+        "family": "Open Sans",
+        "distributionVersion": "Google Fonts v44 Latin variable WOFF2",
+        "weights": [400, 700],
+        "sha256": "d8e4fe0452aa2076429a9bb5d8757d00a994dd95986cf950e9a1a371b9a072a0",
+        "bytes": 48320,
+        "license": "SIL Open Font License 1.1"
+      },
+      "reviewChecks": [
+        "Complete one-page Letter raster viewed at original resolution.",
+        "Heading and paragraph are ordered, legible, unwrapped, and fully inside page margins.",
+        "No clipping, unexpected content, caller sentinel, or external font request is present.",
+        "Required text, one-page geometry, and metadata are present in the candidate PDF.",
+        "Three local A-BASIC-01 repeatability rasters match the reviewed candidate exactly."
+      ]
+    }
+  ],
   "updatePolicy": {
     "automaticAcceptance": false,
     "requiredSteps": [
@@ -29,11 +60,11 @@
     {
       "id": "A-BASIC-01-p1",
       "path": "tests/quality-audit/references/A-BASIC-01-p1.png",
-      "sha256": "f65b3a2543d4f3e73b052e7bb642ac43be8c6237ac18b6d79e3ac0aaf8aafe0c",
-      "bytes": 20945,
-      "fixtureSha256": "3c42287536ce410d6c029e8a2145df0b690e6de4a71de74c2a10600682418987",
+      "sha256": "7cae94affafb3eebf7be7e32a6379b554bf01a7e96a4bee71334071dd9172ea0",
+      "bytes": 14375,
+      "fixtureSha256": "9368e98a179d33925abc062e997c5ecc1de5a74e7d1d1af0576e1f91f382cbc3",
       "status": "approved",
-      "reviewNotes": "One Letter portrait page; heading and paragraph are present, ordered, legible, and inside the page bounds. No caller sentinel is present."
+      "reviewNotes": "One Letter portrait page from the user-approved Open Sans v44 pinned WOFF2 fixture. Heading and paragraph are present, ordered, legible, unwrapped, and inside page bounds; no clipping, caller sentinel, or runtime font request is present."
     },
     {
       "id": "A-ASSET-01-p1",
