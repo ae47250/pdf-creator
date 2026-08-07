@@ -1,0 +1,4 @@
+tests/fixtures/one-page.html text eol=lf
+tests/fixtures/flowing-pages.html text eol=crlf
+tests/fixtures/fixed-pages.html text eol=crlf
+tests/quality-audit/fixtures/*.html text eol=crlf

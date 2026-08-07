@@ -7,6 +7,12 @@ paths:
   /api/v1/pdfs:
     post:
       operationId: createPdf
+      description: >-
+        Converts one completed self-contained HTML document into one PDF. Stored
+        requests require a caller-generated idempotencyKey. Reusing that key with
+        the same semantic payload returns the original report; reusing it with a
+        different semantic payload returns 409 idempotency_conflict. Direct
+        requests set storeResult and storeHtml to false and omit idempotencyKey.
       security:
         - bearerAuth: []
       requestBody:
@@ -26,7 +32,11 @@ paths:
         "400": { $ref: "#/components/responses/Error" }
         "401": { $ref: "#/components/responses/Error" }
         "403": { $ref: "#/components/responses/Error" }
-        "409": { $ref: "#/components/responses/Error" }
+        "409":
+          description: The caller-scoped idempotency key was already used for a different semantic request.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
         "413": { $ref: "#/components/responses/Error" }
         "415": { $ref: "#/components/responses/Error" }
         "422": { $ref: "#/components/responses/Error" }
@@ -137,5 +147,18 @@ components:
               widthPoints: { type: number }
               heightPoints: { type: number }
         sha256: { type: string }
-        storage: { type: object }
-        links: { type: object }
+        storage:
+          type: object
+          additionalProperties: false
+          required: [status, htmlStored, idempotentReplay]
+          properties:
+            status: { const: stored }
+            htmlStored: { type: boolean }
+            idempotentReplay: { type: boolean }
+        links:
+          type: object
+          additionalProperties: false
+          required: [view, download]
+          properties:
+            view: { type: string, format: uri }
+            download: { type: string, format: uri }

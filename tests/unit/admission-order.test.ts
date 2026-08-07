@@ -59,4 +59,27 @@ describe('PDF admission order', () => {
     expect(renderer.renderPdf).not.toHaveBeenCalled();
     expect(reports.storeReport).not.toHaveBeenCalled();
   });
+
+  it('keeps a direct request outside idempotency lookup and report storage', async () => {
+    idempotency.findIdempotentReport.mockResolvedValue(null);
+    renderer.renderPdf.mockResolvedValue({
+      pdf: new Uint8Array([37, 80, 68, 70]),
+      renderedHtml: request.html,
+      pageCount: 1,
+      pageDimensions: [{ widthPoints: 612, heightPoints: 792 }],
+      sha256: 'a'.repeat(64),
+      markerCount: 0
+    });
+
+    const result = await createPdf(
+      { ...request, storeResult: false, storeHtml: false, retentionDays: undefined, idempotencyKey: undefined },
+      caller,
+      'request-id',
+      'https://preview.example'
+    );
+
+    expect(result.kind).toBe('direct');
+    expect(idempotency.findIdempotentReport).not.toHaveBeenCalled();
+    expect(reports.storeReport).not.toHaveBeenCalled();
+  });
 });

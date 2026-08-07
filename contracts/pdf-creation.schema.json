@@ -66,6 +66,13 @@
   },
   "allOf": [
     {
+      "if": { "properties": { "storeResult": { "const": true } }, "required": ["storeResult"] },
+      "then": {
+        "properties": { "idempotencyKey": {} },
+        "required": ["idempotencyKey"]
+      }
+    },
+    {
       "if": { "properties": { "storeResult": { "const": false } }, "required": ["storeResult"] },
       "then": {
         "properties": { "storeHtml": { "const": false } },
