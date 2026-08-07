@@ -67,6 +67,7 @@ async function runProfile(profileName) {
   const loaded = await loadAuditManifest({ rootDir });
   const preflight = await collectToolPreflight({ rootDir });
   const outputDirectory = path.join(artifactRoot, `${profileName}-${runTimestamp()}`);
+  await mkdir(outputDirectory, { recursive: true });
   const baseUrl = process.env.PDF_CREATION_PREVIEW_URL;
   const expectedHostSha256 = process.env.PDF_CREATION_PREVIEW_HOST_SHA256;
   const bearerKey = process.env.PDF_CREATION_PREVIEW_KEY;
