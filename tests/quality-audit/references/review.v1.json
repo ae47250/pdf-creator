@@ -40,7 +40,7 @@
       "path": "tests/quality-audit/references/A-ASSET-01-p1.png",
       "sha256": "4704307d4c5072ec9de6c54945046590c8a773900c48176548dcd316d0bc9bf9",
       "bytes": 87803,
-      "fixtureSha256": "bb32c8d51fa42b571b1d0e4bfeda9e2c98820748c933ada978f869bb9d8a4e98",
+      "fixtureSha256": "2a5de48f2a2c32b77a6d6e5fefc99775f0b60e3e013c064e68cb387093826f07",
       "status": "approved",
       "reviewNotes": "A4 landscape page preserves the synthetic chart, three fact cards, print background, footer, and margins without clipping."
     },
@@ -49,7 +49,7 @@
       "path": "tests/quality-audit/references/A-TABLE-01-p2.png",
       "sha256": "660acbe2136331e5fd6fdcf187c62da9bcb00d14c8f1d1861b76c9b96afdebdd",
       "bytes": 203831,
-      "fixtureSha256": "aa146169e66e2a9285f7bffb4832dd346de0622576a28d91aad7dea5793417fa",
+      "fixtureSha256": "2edd39efd894606db99103c72fa6cfa71932afc767dde9bdf10526b2d2519a86",
       "status": "approved",
       "reviewNotes": "Second table page repeats the header, keeps rows 21 through 43 complete, wraps review notes within cells, and preserves numeric alignment."
     },
@@ -58,7 +58,7 @@
       "path": "tests/quality-audit/references/A-FULL-PATHWAY-01-p1.png",
       "sha256": "9d66b42be2dd622abd20e2787c3245e0b77c903f83ced6c5ef410fb2afebf9ba",
       "bytes": 92273,
-      "fixtureSha256": "8d9b2b3166ecd1e0f412cd68f6b54228366ec6e4c944df1b7872cb92aa726ea1",
+      "fixtureSha256": "95b4f11c562389d25c935b88c2e81e7a1898dc975f9810c1b5e3d27432cf9564",
       "status": "approved",
       "reviewNotes": "First pathway page preserves the four-card hierarchy, internal-link list, page-one footer, margins, and synthetic-only boundary text without clipping."
     }
