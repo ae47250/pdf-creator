@@ -352,8 +352,13 @@ async function newestSummaryPath() {
     const summaryPath = path.join(artifactRoot, entry.name, 'summary.json');
     try {
       const summary = JSON.parse(await readFile(summaryPath, 'utf8'));
-      if (summary.kind === 'pdf-quality-audit' && summary.metrics?.supportedBasic) {
-        candidates.push({ summaryPath, completedAt: summary.completedAt ?? summary.runId });
+      if (
+        summary.kind === 'pdf-quality-audit'
+        && summary.completionStatus === 'complete'
+        && summary.completedAt
+        && summary.metrics?.supportedBasic
+      ) {
+        candidates.push({ summaryPath, completedAt: summary.completedAt });
       }
     } catch { /* skip directories without completed audit summaries */ }
   }

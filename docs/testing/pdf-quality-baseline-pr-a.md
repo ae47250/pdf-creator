@@ -21,6 +21,63 @@ images; the others used explicit structural, textual, and geometric
 expectations. This does not establish overall service, accessibility,
 competitor, load, Preview, Production, or release quality.
 
+## Separate Vercel Preview evidence
+
+Run `pr-a-preview-2026-08-07T06-12-32-864Z` completed on a fresh Vercel
+Preview deployment (`dpl_6PTvw81ZJu86AjotdZdkmVfbedM4`) built from PR #7 head
+`89219d4112c0a02ebf50ca014b580b317f8044bc`. This is
+`vercel-preview-evidence`, not local or Production evidence. The deployment
+used the synthetic `test` caller and the isolated `test` storage marker; no
+Production request, R2 write, retention-canary action, or Production setting
+change occurred.
+
+The runner used its complete separate budget: **2 safety GETs + 7 POSTs = 9
+initiated requests**. It made no retries and ran POSTs sequentially. Health
+returned HTTP 200 with `status=ok`; authenticated diagnostics returned HTTP
+200 with `status=ok`, `caller=test`, and `storageEnvironment=test`. Every POST
+used `storeResult:false` and `storeHtml:false`, so the direct-response path
+returned before any report-store operation.
+
+### Direct Preview answer
+
+The service got **3 of 4 executed supported basic PDFs correct (3/4, 75.00%)**
+in this deliberately small Preview subset. All four returned PDFs and all four
+were structurally valid. `A-BASIC-01` differed from its approved compact visual
+reference; this is a high-severity provisional visual-correctness finding, not
+an audit stop, release gate, or completed remediation claim.
+
+### Preview raw unique-fixture results
+
+| Fixture category | Unique fixtures attempted | Unique fixtures executed | PDFs produced | Structurally valid PDFs | Correctly rendered PDFs | Incorrectly rendered PDFs | Failed PDF generations | Unsupported fixtures | Intentionally rejected fixtures | Unavailable fixtures | PDF-production rate | Structural-validity rate | Correct-rendering rate | Main failure or limitation reasons |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|---|
+| Supported basic PDF | 4 | 4 | 4 | 4 | 3 | 1 | 0 | 0 | 0 | 0 | 4/4 (100.00%) | 4/4 (100.00%) | 3/4 (75.00%) | `A-BASIC-01`: provisional approved-reference mismatch; nonblocking |
+| Intentional policy rejection | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0/0 (N/A) | 0/0 (N/A) | 0/0 (N/A) | `A-SEC-URL-01` returned the documented `unsafe_html` rejection |
+| Unsupported capability | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0/0 (N/A) | 0/0 (N/A) | 0/0 (N/A) | Not sampled in this budgeted Preview subset |
+| Isolation | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0/0 (N/A) | 0/0 (N/A) | 0/0 (N/A) | Not sampled in this budgeted Preview subset |
+| Repeatability | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0/0 (N/A) | 0/0 (N/A) | 0/0 (N/A) | Three `A-FULL-ACADEMIC-01` executions are reported separately below; repeatability is not correctness proof |
+| **Overall** | **5** | **5** | **4** | **4** | **3** | **1** | **0** | **0** | **1** | **0** | **4/4 (100.00%)** | **4/4 (100.00%)** | **3/4 (75.00%)** | **One nonblocking visual-reference mismatch; one observed documented policy rejection** |
+
+There were 7 logical POST executions but only 5 unique fixtures. The three
+`A-FULL-ACADEMIC-01` runs count once in unique-fixture metrics and three times
+in execution/request reporting. Their observed end-to-end durations were 975,
+1,073, and 862 ms; the first is cold-eligible and the next two are
+warm-eligible observations only. No platform-instance reuse is claimed.
+
+The other Preview POST durations were `A-BASIC-01` 3,808 ms, `A-FLOW-01` 683
+ms, `A-FIXED-01` 567 ms, and `A-SEC-URL-01` 129 ms. These are informational
+measurements only; no latency or quality threshold was applied.
+
+Preview capability input-scope execution coverage was 13/38 (34.21%). Core
+evidence availability was 18/18 (100.00%); combined availability was 18/23
+(78.26%) because optional qpdf, veraPDF, MuPDF, WeasyPrint, and Vivliostyle
+were unavailable. Those limitations reduce coverage and do not turn an
+unexecuted capability into a success or block this completed audit lane.
+
+The Preview evidence requires a focused later investigation of the
+`A-BASIC-01` visual-reference mismatch and, if confirmed, a separate
+remediation pull request. It does not justify a service fix in this audit PR,
+caller activation, or a Production-release decision.
+
 ## Raw unique-fixture results
 
 | Fixture category | Unique fixtures attempted | Unique fixtures executed | Not executed | PDFs produced | Structurally valid PDFs | Correctly rendered PDFs | Incorrectly rendered PDFs | Failed PDF generations | Unsupported fixtures | Intentionally rejected fixtures | Environmental limitations | Audit fixture/tool limitations | Unavailable fixtures | PDF-production rate | Structural-validity rate | Correct-rendering rate | Main failure or limitation reasons |
@@ -106,11 +163,11 @@ rejections and one unsupported-feature classification. No explicit service
 defect was confirmed by this compact run. A good compact result does not remove
 the need for PR B expansion.
 
-This report does not claim evidence from CI, Vercel Preview, Production,
-accessibility tooling, broad international-font coverage, load/capacity tests,
-competitor services, or full caller templates. qpdf, veraPDF, MuPDF,
-WeasyPrint, and Vivliostyle were optional and unavailable; core PR A continued
-without them.
+This report does not claim evidence from CI, Production, accessibility tooling,
+broad international-font coverage, load/capacity tests, competitor services, or
+full caller templates. The separate Preview section above is a small budgeted
+subset, not broad Preview coverage. qpdf, veraPDF, MuPDF, WeasyPrint, and
+Vivliostyle were optional and unavailable; core PR A continued without them.
 
 Generated PDFs, complete raster sets, and raw checkpoints remain only in ignored
 `test-artifacts/pdf-quality-audit/`. No generated PDF, credential, signed URL,

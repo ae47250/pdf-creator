@@ -269,7 +269,129 @@
     "qpdf, veraPDF, MuPDF, WeasyPrint, and Vivliostyle were unavailable and optional; evidence availability is 52/57 rather than treating those tools as collected.",
     "Accessibility, broad international fonts, load/capacity, competitor services, and full caller templates are deferred to PR B or separately authorized work."
   ],
-  "previewEvidence": "not-collected-in-this-local-baseline",
+  "previewEvidence": {
+    "scope": "pr-a-preview-budgeted-subset",
+    "evidenceClassification": "vercel-preview-evidence",
+    "runId": "pr-a-preview-2026-08-07T06-12-32-864Z",
+    "completedAt": "2026-08-07T06:12:55.390Z",
+    "completionStatus": "complete",
+    "qualityRule": "metrics-only-nonblocking",
+    "releaseAssessment": "not-performed",
+    "deployment": {
+      "id": "dpl_6PTvw81ZJu86AjotdZdkmVfbedM4",
+      "environment": "preview",
+      "gitBranch": "codex/pdf-service-quality-audit",
+      "gitCommit": "89219d4112c0a02ebf50ca014b580b317f8044bc",
+      "pullRequest": 7
+    },
+    "safetyPreflight": {
+      "health": { "status": 200, "serviceStatus": "ok", "safeToProceed": true },
+      "diagnostics": { "status": 200, "serviceStatus": "ok", "caller": "test", "storageEnvironment": "test", "safeToProceed": true },
+      "storageBoundary": "Every POST used storeResult:false and storeHtml:false; the direct-response path does not enter report storage.",
+      "productionBoundary": "Preview-only evidence; no Production request, R2 write, retention-canary action, or Production configuration change."
+    },
+    "requestUsage": {
+      "safetyGets": 2,
+      "postRequests": 7,
+      "totalInitiatedRequests": 9,
+      "maximumTotalRequests": 9,
+      "concurrency": 1,
+      "retryPolicy": "none",
+      "allFailedOrTimedOutPostsCountAgainstBudget": true
+    },
+    "coverage": {
+      "uniqueFixturesAttempted": 5,
+      "uniqueFixturesExecuted": 5,
+      "logicalExecutions": 7,
+      "requestAttempts": 7,
+      "fixtureInputScopeExecutionCoverage": { "numerator": 13, "denominator": 38, "value": 0.34210526315789475, "percentage": 34.21, "label": "fixture-input-scope-execution-coverage-nonblocking" },
+      "evidenceAvailability": {
+        "numerator": 18,
+        "denominator": 23,
+        "value": 0.782608695652174,
+        "percentage": 78.26,
+        "label": "evidence-availability-only-nonblocking",
+        "coreRequired": { "numerator": 18, "denominator": 18, "value": 1, "percentage": 100 },
+        "optionalToolEvidence": { "numerator": 0, "denominator": 5, "value": 0, "percentage": 0 },
+        "unavailableOptionalEvidence": ["qpdf", "veraPDF", "MuPDF", "WeasyPrint", "Vivliostyle"]
+      }
+    },
+    "metrics": {
+      "supported-basic-pdf": {
+        "uniqueFixturesAttempted": 4,
+        "uniqueFixturesExecuted": 4,
+        "uniqueFixturesMeetingAllRequiredExpectations": 3,
+        "uniqueFixturesFailingOneOrMoreRequiredExpectations": 1,
+        "pdfsProduced": 4,
+        "structurallyValidPdfs": 4,
+        "correctlyRenderedPdfs": 3,
+        "incorrectlyRenderedPdfs": 1,
+        "failedPdfGenerations": 0,
+        "unsupportedFixtures": 0,
+        "intentionallyRejectedFixtures": 0,
+        "environmentalLimitationFixtures": 0,
+        "auditToolLimitationFixtures": 0,
+        "unavailableFixtures": 0,
+        "productionRate": { "numerator": 4, "denominator": 4, "value": 1, "percentage": 100 },
+        "structuralValidityRate": { "numerator": 4, "denominator": 4, "value": 1, "percentage": 100 },
+        "correctRenderingRate": { "numerator": 3, "denominator": 4, "value": 0.75, "percentage": 75 },
+        "affectedFixtures": [{ "fixtureId": "A-BASIC-01", "result": "incorrect-rendering", "reason": "Rendered page does not exactly match approved compact reference A-BASIC-01-p1. This provisional PR A label is nonblocking." }]
+      },
+      "intentional-policy-rejection": {
+        "uniqueFixturesAttempted": 1,
+        "uniqueFixturesExecuted": 1,
+        "pdfsProduced": 0,
+        "structurallyValidPdfs": 0,
+        "correctlyRenderedPdfs": 0,
+        "incorrectlyRenderedPdfs": 0,
+        "failedPdfGenerations": 0,
+        "unsupportedFixtures": 0,
+        "intentionallyRejectedFixtures": 1,
+        "unavailableFixtures": 0,
+        "productionRate": { "numerator": 0, "denominator": 0, "value": null, "percentage": null },
+        "structuralValidityRate": { "numerator": 0, "denominator": 0, "value": null, "percentage": null },
+        "correctRenderingRate": { "numerator": 0, "denominator": 0, "value": null, "percentage": null },
+        "affectedFixtures": [{ "fixtureId": "A-SEC-URL-01", "result": "intentionally-rejected", "reason": "The service returned the documented unsafe_html rejection." }]
+      },
+      "overall": {
+        "uniqueFixturesAttempted": 5,
+        "uniqueFixturesExecuted": 5,
+        "uniqueFixturesMeetingAllRequiredExpectations": 4,
+        "uniqueFixturesFailingOneOrMoreRequiredExpectations": 1,
+        "pdfsProduced": 4,
+        "structurallyValidPdfs": 4,
+        "correctlyRenderedPdfs": 3,
+        "incorrectlyRenderedPdfs": 1,
+        "failedPdfGenerations": 0,
+        "unsupportedFixtures": 0,
+        "intentionallyRejectedFixtures": 1,
+        "environmentalLimitationFixtures": 0,
+        "auditToolLimitationFixtures": 0,
+        "unavailableFixtures": 0,
+        "productionRate": { "numerator": 4, "denominator": 4, "value": 1, "percentage": 100 },
+        "structuralValidityRate": { "numerator": 4, "denominator": 4, "value": 1, "percentage": 100 },
+        "correctRenderingRate": { "numerator": 3, "denominator": 4, "value": 0.75, "percentage": 75 }
+      }
+    },
+    "executionDurationsMs": {
+      "A-BASIC-01": [3808],
+      "A-FLOW-01": [683],
+      "A-FIXED-01": [567],
+      "A-FULL-ACADEMIC-01": [975, 1073, 862],
+      "A-SEC-URL-01": [129]
+    },
+    "findings": {
+      "bySeverity": { "high": 1, "informational": 1 },
+      "byCause": { "visual-correctness": 1, "documented-policy": 1 },
+      "confirmedServiceDefects": 0,
+      "remediationBoundary": "Investigate A-BASIC-01 in a later focused remediation pull request; do not mix service remediation into PR A."
+    },
+    "limitations": [
+      "This is a small budgeted Preview subset, not a complete Preview, CI, or Production benchmark.",
+      "Visual-reference equality remains a provisional nonblocking PR A label; visual tolerances are not calibrated across environments.",
+      "No broad concurrency, caller-isolation, accessibility, international-font, competitor, or Production testing was performed."
+    ]
+  },
   "productionEvidence": "not-collected",
   "decisionBoundary": "No minimum quality result blocks audit completion. Caller activation and Production release are separate later decisions."
 }
