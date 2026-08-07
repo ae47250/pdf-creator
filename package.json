@@ -24,6 +24,7 @@
     "audit:self-test": "vitest run tests/quality-audit/harness-self.test.ts",
     "audit:core": "vitest run tests/quality-audit/core.test.ts",
     "audit:preview": "node --env-file-if-exists=.env.local scripts/run-quality-audit.mjs run --profile pr-a-preview",
+    "audit:preview:basic-remediation": "node --env-file-if-exists=.env.local scripts/run-quality-audit.mjs run --profile pr-a-preview-basic-remediation",
     "audit:report": "node scripts/run-quality-audit.mjs report"
   },
   "dependencies": {

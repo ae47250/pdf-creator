@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "referenceSet": "pr-a-v1",
+  "referenceSet": "pr-a-v1-pinned-font",
   "status": "approved",
   "approvedAt": "2026-08-07T04:01:00.000Z",
   "approvedBy": "Codex PR A implementation review",
@@ -13,6 +13,37 @@
     "poppler": "25.07.0",
     "resolutionDpi": 120
   },
+  "reviewHistory": [
+    {
+      "id": "A-BASIC-01-pinned-open-sans-v44",
+      "reviewedAt": "2026-08-07T07:14:53.305Z",
+      "reviewedBy": "Codex pinned-font remediation review under user-approved option 1",
+      "reason": "Replace the local-Arial/Preview-Open-Sans font substitution with the same embedded Open Sans v44 Latin WOFF2 for both environments.",
+      "candidateArtifact": "ignored test-artifacts/pdf-quality-audit/pr-a-local-vitest-34540-1786086755505/visual/A-BASIC-01-p1.png",
+      "serviceCommit": "f0411f36a909509a91fc5f62f59386bfd62903ee",
+      "operatingSystem": "Windows 11 10.0.26100 x64",
+      "browser": "Microsoft Edge 151.0.4129.59",
+      "poppler": "25.07.0",
+      "resolutionDpi": 120,
+      "fixtureSha256": "9368e98a179d33925abc062e997c5ecc1de5a74e7d1d1af0576e1f91f382cbc3",
+      "imageSha256": "7cae94affafb3eebf7be7e32a6379b554bf01a7e96a4bee71334071dd9172ea0",
+      "font": {
+        "family": "Open Sans",
+        "distributionVersion": "Google Fonts v44 Latin variable WOFF2",
+        "weights": [400, 700],
+        "sha256": "d8e4fe0452aa2076429a9bb5d8757d00a994dd95986cf950e9a1a371b9a072a0",
+        "bytes": 48320,
+        "license": "SIL Open Font License 1.1"
+      },
+      "reviewChecks": [
+        "Complete one-page Letter raster viewed at original resolution.",
+        "Heading and paragraph are ordered, legible, unwrapped, and fully inside page margins.",
+        "No clipping, unexpected content, caller sentinel, or external font request is present.",
+        "Required text, one-page geometry, and metadata are present in the candidate PDF.",
+        "Three local A-BASIC-01 repeatability rasters match the reviewed candidate exactly."
+      ]
+    }
+  ],
   "updatePolicy": {
     "automaticAcceptance": false,
     "requiredSteps": [
@@ -29,18 +60,18 @@
     {
       "id": "A-BASIC-01-p1",
       "path": "tests/quality-audit/references/A-BASIC-01-p1.png",
-      "sha256": "f65b3a2543d4f3e73b052e7bb642ac43be8c6237ac18b6d79e3ac0aaf8aafe0c",
-      "bytes": 20945,
-      "fixtureSha256": "3c42287536ce410d6c029e8a2145df0b690e6de4a71de74c2a10600682418987",
+      "sha256": "7cae94affafb3eebf7be7e32a6379b554bf01a7e96a4bee71334071dd9172ea0",
+      "bytes": 14375,
+      "fixtureSha256": "9368e98a179d33925abc062e997c5ecc1de5a74e7d1d1af0576e1f91f382cbc3",
       "status": "approved",
-      "reviewNotes": "One Letter portrait page; heading and paragraph are present, ordered, legible, and inside the page bounds. No caller sentinel is present."
+      "reviewNotes": "One Letter portrait page from the user-approved Open Sans v44 pinned WOFF2 fixture. Heading and paragraph are present, ordered, legible, unwrapped, and inside page bounds; no clipping, caller sentinel, or runtime font request is present."
     },
     {
       "id": "A-ASSET-01-p1",
       "path": "tests/quality-audit/references/A-ASSET-01-p1.png",
       "sha256": "4704307d4c5072ec9de6c54945046590c8a773900c48176548dcd316d0bc9bf9",
       "bytes": 87803,
-      "fixtureSha256": "bb32c8d51fa42b571b1d0e4bfeda9e2c98820748c933ada978f869bb9d8a4e98",
+      "fixtureSha256": "2a5de48f2a2c32b77a6d6e5fefc99775f0b60e3e013c064e68cb387093826f07",
       "status": "approved",
       "reviewNotes": "A4 landscape page preserves the synthetic chart, three fact cards, print background, footer, and margins without clipping."
     },
@@ -49,7 +80,7 @@
       "path": "tests/quality-audit/references/A-TABLE-01-p2.png",
       "sha256": "660acbe2136331e5fd6fdcf187c62da9bcb00d14c8f1d1861b76c9b96afdebdd",
       "bytes": 203831,
-      "fixtureSha256": "aa146169e66e2a9285f7bffb4832dd346de0622576a28d91aad7dea5793417fa",
+      "fixtureSha256": "2edd39efd894606db99103c72fa6cfa71932afc767dde9bdf10526b2d2519a86",
       "status": "approved",
       "reviewNotes": "Second table page repeats the header, keeps rows 21 through 43 complete, wraps review notes within cells, and preserves numeric alignment."
     },
@@ -58,7 +89,7 @@
       "path": "tests/quality-audit/references/A-FULL-PATHWAY-01-p1.png",
       "sha256": "9d66b42be2dd622abd20e2787c3245e0b77c903f83ced6c5ef410fb2afebf9ba",
       "bytes": 92273,
-      "fixtureSha256": "8d9b2b3166ecd1e0f412cd68f6b54228366ec6e4c944df1b7872cb92aa726ea1",
+      "fixtureSha256": "95b4f11c562389d25c935b88c2e81e7a1898dc975f9810c1b5e3d27432cf9564",
       "status": "approved",
       "reviewNotes": "First pathway page preserves the four-card hierarchy, internal-link list, page-one footer, margins, and synthetic-only boundary text without clipping."
     }

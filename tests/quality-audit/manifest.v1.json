@@ -32,6 +32,17 @@
         { "caseIds": ["A-FULL-ACADEMIC-01"], "repetitions": 3 },
         { "caseIds": ["A-SEC-URL-01"], "repetitions": 1 }
       ]
+    },
+    "pr-a-preview-basic-remediation": {
+      "lane": "preview",
+      "maximumConcurrency": 1,
+      "maximumGetRequests": 2,
+      "maximumPostRequests": 4,
+      "startSpacingMs": 2000,
+      "groups": [
+        { "caseIds": ["A-BASIC-01"], "repetitions": 3 },
+        { "caseIds": ["A-FLOW-01"], "repetitions": 1 }
+      ]
     }
   },
   "cases": [
@@ -41,7 +52,7 @@
       "category": "supported-basic-pdf",
       "capabilityIds": ["pdf.production", "pdf.structure", "pdf.text", "pdf.metadata", "pdf.visual.basic"],
       "expectedClass": "supported-and-expected-to-pass",
-      "source": { "path": "tests/fixtures/one-page.html", "sha256": "3c42287536ce410d6c029e8a2145df0b690e6de4a71de74c2a10600682418987" },
+      "source": { "path": "tests/fixtures/one-page.html", "sha256": "9368e98a179d33925abc062e997c5ecc1de5a74e7d1d1af0576e1f91f382cbc3" },
       "request": {
         "filename": "A_BASIC_01.pdf", "storeResult": false, "storeHtml": false,
         "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
@@ -134,7 +145,7 @@
       "category": "supported-basic-pdf",
       "capabilityIds": ["pdf.table.pagination", "pdf.table.header-repeat", "pdf.table.wrapping"],
       "expectedClass": "supported-and-expected-to-pass",
-      "source": { "path": "tests/quality-audit/fixtures/long-table.html", "sha256": "aa146169e66e2a9285f7bffb4832dd346de0622576a28d91aad7dea5793417fa" },
+      "source": { "path": "tests/quality-audit/fixtures/long-table.html", "sha256": "2edd39efd894606db99103c72fa6cfa71932afc767dde9bdf10526b2d2519a86" },
       "request": {
         "filename": "A_TABLE_01.pdf", "storeResult": false, "storeHtml": false,
         "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0.5, "right": 0.5, "bottom": 0.5, "left": 0.5 } },
@@ -164,7 +175,7 @@
       "category": "supported-basic-pdf",
       "capabilityIds": ["pdf.asset.data-url", "pdf.svg", "pdf.css.background", "pdf.geometry.a4-landscape"],
       "expectedClass": "supported-and-expected-to-pass",
-      "source": { "path": "tests/quality-audit/fixtures/inline-assets-a4-landscape.html", "sha256": "bb32c8d51fa42b571b1d0e4bfeda9e2c98820748c933ada978f869bb9d8a4e98" },
+      "source": { "path": "tests/quality-audit/fixtures/inline-assets-a4-landscape.html", "sha256": "2a5de48f2a2c32b77a6d6e5fefc99775f0b60e3e013c064e68cb387093826f07" },
       "request": {
         "filename": "A_ASSET_01.pdf", "storeResult": false, "storeHtml": false,
         "page": { "format": "A4", "orientation": "landscape", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
@@ -192,7 +203,7 @@
       "category": "supported-basic-pdf",
       "capabilityIds": ["pdf.text.unicode", "pdf.text.searchable"],
       "expectedClass": "supported-and-expected-to-pass",
-      "source": { "path": "tests/quality-audit/fixtures/unicode-text.html", "sha256": "9a7ebd5afb2f956c20b195b763de8d42ff2b3fb416f876d2a58f32f2cb86e37e" },
+      "source": { "path": "tests/quality-audit/fixtures/unicode-text.html", "sha256": "af34e7167fb6c0bb06a469e522d7b8ea6e193200200971556b72805fb53d4528" },
       "request": {
         "filename": "A_TEXT_01.pdf", "storeResult": false, "storeHtml": false,
         "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0.65, "right": 0.65, "bottom": 0.65, "left": 0.65 } },
@@ -219,7 +230,7 @@
       "category": "supported-basic-pdf",
       "capabilityIds": ["pdf.document.academic", "pdf.pagination.fixed", "pdf.table"],
       "expectedClass": "supported-and-expected-to-pass",
-      "source": { "path": "tests/quality-audit/fixtures/synthetic-academic-plan.html", "sha256": "c3c1c34f48043d1c31d8289254577ac0e16ad40b65ab3d6cc877451fa68af869" },
+      "source": { "path": "tests/quality-audit/fixtures/synthetic-academic-plan.html", "sha256": "b837371e82dbdf7c643605d78c62d8fbd97d66a491b3988e7c8ff0148287a647" },
       "request": {
         "filename": "A_FULL_ACADEMIC_01.pdf", "storeResult": false, "storeHtml": false,
         "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
@@ -250,7 +261,7 @@
       "category": "supported-basic-pdf",
       "capabilityIds": ["pdf.document.service", "pdf.pagination.fixed", "pdf.currency"],
       "expectedClass": "supported-and-expected-to-pass",
-      "source": { "path": "tests/quality-audit/fixtures/synthetic-service-estimate.html", "sha256": "27c017caff8e66034c1d86ae3eb25d161aa313f5d826a9dbcf2a439cbf45a025" },
+      "source": { "path": "tests/quality-audit/fixtures/synthetic-service-estimate.html", "sha256": "a47151f6630f9aa2f131deb87f1ab9eb7e5290482b912a627b7a97e88c632b20" },
       "request": {
         "filename": "A_FULL_SERVICE_01.pdf", "storeResult": false, "storeHtml": false,
         "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
@@ -280,7 +291,7 @@
       "category": "supported-basic-pdf",
       "capabilityIds": ["pdf.document.job", "pdf.link.https", "pdf.table"],
       "expectedClass": "supported-and-expected-to-pass",
-      "source": { "path": "tests/quality-audit/fixtures/synthetic-job-match.html", "sha256": "166a8972c1c84c8d4056afac516117ef2a67929487252331fe6d94e063d2e964" },
+      "source": { "path": "tests/quality-audit/fixtures/synthetic-job-match.html", "sha256": "211810090b41a5b1457c9b9afe860e6365611ab2c4e49a36cd910e07b2d684e6" },
       "request": {
         "filename": "A_FULL_JOB_01.pdf", "storeResult": false, "storeHtml": false,
         "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
@@ -310,7 +321,7 @@
       "category": "supported-basic-pdf",
       "capabilityIds": ["pdf.document.pathway", "pdf.link.internal", "pdf.pagination.fixed", "pdf.visual.cards"],
       "expectedClass": "supported-and-expected-to-pass",
-      "source": { "path": "tests/quality-audit/fixtures/synthetic-career-pathway.html", "sha256": "8d9b2b3166ecd1e0f412cd68f6b54228366ec6e4c944df1b7872cb92aa726ea1" },
+      "source": { "path": "tests/quality-audit/fixtures/synthetic-career-pathway.html", "sha256": "95b4f11c562389d25c935b88c2e81e7a1898dc975f9810c1b5e3d27432cf9564" },
       "request": {
         "filename": "A_FULL_PATHWAY_01.pdf", "storeResult": false, "storeHtml": false,
         "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
@@ -344,7 +355,7 @@
       "category": "intentional-policy-rejection",
       "capabilityIds": ["security.script-rejection"],
       "expectedClass": "intentionally-rejected-by-documented-policy",
-      "source": { "path": "tests/fixtures/one-page.html", "sha256": "3c42287536ce410d6c029e8a2145df0b690e6de4a71de74c2a10600682418987", "mutation": "script" },
+      "source": { "path": "tests/fixtures/one-page.html", "sha256": "9368e98a179d33925abc062e997c5ecc1de5a74e7d1d1af0576e1f91f382cbc3", "mutation": "script" },
       "request": {
         "filename": "A_SEC_SCRIPT_01.pdf", "storeResult": false, "storeHtml": false,
         "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
@@ -361,7 +372,7 @@
       "category": "intentional-policy-rejection",
       "capabilityIds": ["security.external-resource-rejection"],
       "expectedClass": "intentionally-rejected-by-documented-policy",
-      "source": { "path": "tests/fixtures/one-page.html", "sha256": "3c42287536ce410d6c029e8a2145df0b690e6de4a71de74c2a10600682418987", "mutation": "external-url" },
+      "source": { "path": "tests/fixtures/one-page.html", "sha256": "9368e98a179d33925abc062e997c5ecc1de5a74e7d1d1af0576e1f91f382cbc3", "mutation": "external-url" },
       "request": {
         "filename": "A_SEC_URL_01.pdf", "storeResult": false, "storeHtml": false,
         "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },
@@ -378,7 +389,7 @@
       "category": "intentional-policy-rejection",
       "capabilityIds": ["security.local-file-rejection"],
       "expectedClass": "intentionally-rejected-by-documented-policy",
-      "source": { "path": "tests/fixtures/one-page.html", "sha256": "3c42287536ce410d6c029e8a2145df0b690e6de4a71de74c2a10600682418987", "mutation": "local-file-url" },
+      "source": { "path": "tests/fixtures/one-page.html", "sha256": "9368e98a179d33925abc062e997c5ecc1de5a74e7d1d1af0576e1f91f382cbc3", "mutation": "local-file-url" },
       "request": {
         "filename": "A_SEC_LOCAL_01.pdf", "storeResult": false, "storeHtml": false,
         "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },

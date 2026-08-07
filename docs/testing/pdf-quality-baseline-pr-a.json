@@ -392,6 +392,62 @@
       "No broad concurrency, caller-isolation, accessibility, international-font, competitor, or Production testing was performed."
     ]
   },
+  "remediationPreviewEvidence": {
+    "scope": "pr-8-pinned-font-six-request-confirmation",
+    "evidenceClassification": "vercel-preview-evidence",
+    "runId": "pr-a-preview-basic-remediation-2026-08-07T07-33-49-626Z",
+    "completionStatus": "complete",
+    "qualityRule": "metrics-only-nonblocking",
+    "releaseAssessment": "not-performed",
+    "deployment": {
+      "id": "dpl_4XToHMzxGwNsYhwNkdCSaaFmMNuc",
+      "environment": "preview",
+      "gitBranch": "codex/pdf-basic-01-preview-remediation",
+      "gitCommit": "c966204d4db718590f81a34f59f990a5241a495a",
+      "pullRequest": 8
+    },
+    "safetyPreflight": {
+      "health": { "status": 200, "serviceStatus": "ok", "safeToProceed": true },
+      "diagnostics": { "status": 200, "serviceStatus": "ok", "caller": "test", "storageEnvironment": "test", "safeToProceed": true },
+      "storageBoundary": "Every POST used storeResult:false and storeHtml:false; no Production R2 write.",
+      "productionBoundary": "Preview-only evidence; no Production request or configuration change."
+    },
+    "requestUsage": {
+      "safetyGets": 2,
+      "postRequests": 4,
+      "totalInitiatedRequests": 6,
+      "maximumTotalRequests": 6,
+      "concurrency": 1,
+      "retryPolicy": "none",
+      "allFailedOrTimedOutPostsCountAgainstBudget": true
+    },
+    "metrics": {
+      "supported-basic-pdf": {
+        "uniqueFixturesAttempted": 2,
+        "uniqueFixturesExecuted": 2,
+        "pdfsProduced": 2,
+        "structurallyValidPdfs": 2,
+        "correctlyRenderedPdfs": 1,
+        "incorrectlyRenderedPdfs": 1,
+        "failedPdfGenerations": 0,
+        "unsupportedFixtures": 0,
+        "intentionallyRejectedFixtures": 0,
+        "unavailableFixtures": 0,
+        "productionRate": { "numerator": 2, "denominator": 2, "value": 1, "percentage": 100 },
+        "structuralValidityRate": { "numerator": 2, "denominator": 2, "value": 1, "percentage": 100 },
+        "correctRenderingRate": { "numerator": 1, "denominator": 2, "value": 0.5, "percentage": 50 },
+        "affectedFixtures": [{ "fixtureId": "A-BASIC-01", "result": "incorrect-rendering", "findingEvents": 3, "reason": "Three exact approved-reference mismatches; provisional PR A label is nonblocking." }]
+      }
+    },
+    "executionDurationsMs": { "A-BASIC-01": [4369, 1881, 976], "A-FLOW-01": [426] },
+    "visualEvidence": {
+      "fixtureId": "A-BASIC-01",
+      "repeatCandidateSha256": "8540cf1ba3124ab8980810aa8035e980aba88ab2f53962b328b983be21dd55dd",
+      "approvedReferenceSha256": "7cae94affafb3eebf7be7e32a6379b554bf01a7e96a4bee71334071dd9172ea0",
+      "repeatability": "all three Preview rasters equal each other; this does not establish visual correctness",
+      "result": "nonblocking visual-reference mismatch; no tolerance or reference update"
+    }
+  },
   "productionEvidence": "not-collected",
   "decisionBoundary": "No minimum quality result blocks audit completion. Caller activation and Production release are separate later decisions."
 }
