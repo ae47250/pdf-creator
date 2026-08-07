@@ -1,5 +1,7 @@
 import chromium from '@sparticuz/chromium';
 import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { posix } from 'node:path';
 import puppeteer, { type Browser, type Page } from 'puppeteer-core';
 import { PdfServiceError } from './errors';
 import { validateAndNormalizeHtml } from './html-safety';
@@ -7,10 +9,16 @@ import { LIMITS } from './limits';
 import { countPdfPages, finalizeAndValidatePdf, mergePdfPages } from './pdf-quality';
 import type { PdfCreationRequest, RenderResult } from './types';
 
-const localBrowserPaths = [
+const windowsBrowserPaths = [
   'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
   'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
   'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+];
+
+const macOSBrowserRelativePaths = [
+  'Google Chrome.app/Contents/MacOS/Google Chrome',
+  'Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+  'Chromium.app/Contents/MacOS/Chromium'
 ];
 
 export async function renderPdf(request: PdfCreationRequest, caller: string): Promise<RenderResult> {
@@ -53,22 +61,51 @@ async function launchBrowserWithinTimeout(): Promise<Browser> {
 }
 
 async function launchBrowser(): Promise<Browser> {
-  const explicit = process.env.CHROME_PATH;
-  if (explicit && !existsSync(explicit)) {
-    throw new PdfServiceError('service_unavailable', 503, 'CHROME_PATH does not point to a readable browser.');
-  }
-  const local = explicit || localBrowserPaths.find((candidate) => existsSync(candidate));
-  if (!local && process.arch !== 'x64') {
-    throw new PdfServiceError('service_unavailable', 503, 'Bundled Chromium requires an x64 runtime.');
-  }
+  const executable = await resolveBrowserExecutable();
   return puppeteer.launch({
-    args: local
+    args: executable.local
       ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
       : [...chromium.args, '--disable-dev-shm-usage'],
     defaultViewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
-    executablePath: local || await chromium.executablePath(),
+    executablePath: executable.path,
     headless: true
   });
+}
+
+export async function resolveBrowserExecutable({
+  explicitPath = process.env.CHROME_PATH,
+  platform = process.platform,
+  architecture = process.arch,
+  homeDirectory = homedir(),
+  pathExists = existsSync,
+  bundledExecutablePath = () => chromium.executablePath()
+}: {
+  explicitPath?: string;
+  platform?: NodeJS.Platform;
+  architecture?: string;
+  homeDirectory?: string;
+  pathExists?: (path: string) => boolean;
+  bundledExecutablePath?: () => Promise<string>;
+} = {}): Promise<{ path: string; local: boolean }> {
+  if (explicitPath && !pathExists(explicitPath)) {
+    throw new PdfServiceError('service_unavailable', 503, 'CHROME_PATH does not point to a readable browser.');
+  }
+  const local = explicitPath || browserPaths(platform, homeDirectory).find((candidate) => pathExists(candidate));
+  if (!local && architecture !== 'x64') {
+    throw new PdfServiceError('service_unavailable', 503, 'Bundled Chromium requires an x64 runtime.');
+  }
+  return local
+    ? { path: local, local: true }
+    : { path: await bundledExecutablePath(), local: false };
+}
+
+function browserPaths(platform: NodeJS.Platform, homeDirectory: string): string[] {
+  if (platform === 'win32') return windowsBrowserPaths;
+  if (platform !== 'darwin') return [];
+  return macOSBrowserRelativePaths.flatMap((relativePath) => [
+    posix.join('/Applications', relativePath),
+    posix.join(homeDirectory, 'Applications', relativePath)
+  ]);
 }
 
 async function configurePage(page: Page): Promise<void> {

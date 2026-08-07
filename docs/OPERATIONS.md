@@ -2,7 +2,7 @@
 
 ## Runtime and secrets
 
-Use Node.js 24.x. Production uses bundled `@sparticuz/chromium@149.0.0` on x64. Local runs use `CHROME_PATH` when supplied, otherwise installed Chrome or Edge.
+Use Node.js 24.x. Production uses bundled `@sparticuz/chromium@149.0.0` on x64. Local runs use `CHROME_PATH` when supplied; otherwise Windows discovers installed Chrome or Edge, and macOS discovers Chrome, Edge, or Chromium under `/Applications` or `~/Applications`.
 
 Application keys:
 

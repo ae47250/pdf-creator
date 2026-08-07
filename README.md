@@ -6,7 +6,7 @@ The service does not own application templates, business data, report calculatio
 
 ## Local setup
 
-Requirements: Node.js 24 and a local Chrome or Edge installation. `CHROME_PATH` can select a specific executable.
+Requirements: Node.js 24 and a local Chromium-compatible browser. Windows discovers Chrome or Edge; macOS discovers Chrome, Edge, or Chromium under `/Applications` or `~/Applications`. `CHROME_PATH` can select a specific executable and always takes priority.
 
 ```powershell
 npm.cmd ci
