@@ -19,7 +19,12 @@
     "test:live": "node --env-file-if-exists=.env.local scripts/run-live-reliability.mjs",
     "test:preview": "node --env-file-if-exists=.env.local scripts/run-live-reliability.mjs",
     "test:preview:storage": "node --env-file-if-exists=.env.local scripts/run-preview-storage-workflow.mjs",
-    "test:report": "node scripts/generate-test-report.mjs"
+    "test:report": "node scripts/generate-test-report.mjs",
+    "audit:preflight": "node scripts/run-quality-audit.mjs preflight --profile pr-a-local",
+    "audit:self-test": "vitest run tests/quality-audit/harness-self.test.ts",
+    "audit:core": "vitest run tests/quality-audit/core.test.ts",
+    "audit:preview": "node --env-file-if-exists=.env.local scripts/run-quality-audit.mjs run --profile pr-a-preview",
+    "audit:report": "node scripts/run-quality-audit.mjs report"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1094.0",

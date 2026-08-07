@@ -34,9 +34,60 @@ npm.cmd run test:preview:storage
 
 # Summarize the newest local and live JSON evidence
 npm.cmd run test:report
+
+# Inspect audit tools and immutable fixture inputs without rendering
+npm.cmd run audit:preflight
+
+# Prove that the quality-audit harness detects deliberately bad evidence
+npm.cmd run audit:self-test
+
+# Run the compact PR A audit locally and write a raw-count baseline
+npm.cmd run audit:core
+
+# Rebuild the compact Markdown report from the latest audit evidence
+npm.cmd run audit:report
 ```
 
-Generated PDFs, PNGs, and JSON measurements are written under `test-artifacts/pdf-regression/`. The directory is intentionally excluded from Git because the files are reproducible and can be bulky.
+## Metrics-only quality audit
+
+The complete PR A corpus, evidence, reference, tool-preflight, Preview-budget,
+and artifact rules are documented in [pdf-quality-audit.md](./pdf-quality-audit.md).
+
+The PR A quality audit is a measurement tool, not a release gate. A bad PDF, a
+visual mismatch, a low percentage, or even zero correct fixtures is recorded as
+evidence and never stops the remaining authorized cases. The runner stops only
+for safety, authorization, credential, cost/request-budget, external-service,
+or genuine technical-impossibility reasons.
+
+The report keeps these units separate:
+
+- unique fixture IDs;
+- logical executions, including repeatability runs;
+- actual request attempts.
+
+For the supported basic-PDF category it reports raw counts and exact fractions
+for PDF production, structural validity, and correct rendering. Unsupported
+features, documented policy rejections, known defects, environmental limits,
+and audit-tool limits remain separate and cannot be counted as successful
+supported PDFs.
+
+Generated evidence is written only under
+`test-artifacts/pdf-quality-audit/<run-id>/`. The directory is ignored. Do not
+clean the broader `test-artifacts/` tree because it also contains independent
+lifecycle evidence.
+
+The manual PR A Preview command is `npm.cmd run audit:preview`. It is limited to
+at most two preflight GETs and seven sequential POST attempts (nine requests
+total), uses only
+`storeResult:false` and `storeHtml:false`, performs no retry, and never invokes
+the storage workflow. It requires an independently verified branch-deployment
+hostname pin in `PDF_CREATION_PREVIEW_HOST_SHA256` before any bearer credential
+is sent. Missing Preview credentials make that evidence lane unavailable; they
+do not invalidate the local audit.
+
+The older regression and reliability suites use the separate
+`test-artifacts/pdf-regression/` artifact tree. That directory is also excluded
+from Git because its reproducible PDFs, PNGs, and JSON measurements can be bulky.
 
 ## Test tiers
 
@@ -68,6 +119,7 @@ The live runner reads these environment-variable names without printing their va
 
 ```text
 PDF_CREATION_PREVIEW_URL
+PDF_CREATION_PREVIEW_HOST_SHA256
 PDF_CREATION_PREVIEW_KEY
 PDF_CREATION_PREVIEW_TIMEOUT_MS
 PDF_CREATION_PREVIEW_MAX_LATENCY_MS
@@ -76,7 +128,7 @@ PDF_CREATION_PREVIEW_ROUND_DELAY_MS
 VERCEL_AUTOMATION_BYPASS_SECRET
 ```
 
-The runner has no Production URL or credential fallback. It blocks unless the explicit Preview URL and key are present. The bypass secret is used only to pass Preview Deployment Protection and is never printed.
+The runners have no Production URL or credential fallback. They block unless the explicit Preview URL and key are present. The PR A quality-audit runner also requires the independently verified hostname pin. The bypass secret is used only to pass Preview Deployment Protection and is never printed.
 
 The runner sends one ordinary unauthorized request and one invalid request, then runs concurrency 1, 2, 5, and 10 three times with at least 61 seconds between complete rounds. All payloads are small and fictional and use `storeResult: false`. A request retries only `429 renderer_busy`, requires `Retry-After: 1`, uses at most five attempts and a 15-second admission deadline, and applies the documented full-jitter delay. It never retries `rate_limited`, a timeout, or an ambiguous 5xx. Acceptance requires 100% eventual success, no corruption/contamination/timeouts, warm eventual p95 at most 15 seconds, maximum eventual completion at most 30 seconds, and successful recovery.
 

@@ -1,0 +1,275 @@
+{
+  "schemaVersion": 1,
+  "kind": "pdf-quality-audit-baseline",
+  "scope": "pr-a-compact-local",
+  "evidenceClassification": "local-worktree-evidence",
+  "runId": "pr-a-local-2026-08-07T04-48-05-399Z",
+  "completedAt": "2026-08-07T04:48:44.023Z",
+  "completionStatus": "complete",
+  "qualityRule": "metrics-only-nonblocking",
+  "releaseAssessment": "not-performed",
+  "source": {
+    "baseCommit": "074b3fdf754b3eca806f13d2fa16e4327b8cc5a1",
+    "baseDescription": "verified origin/main containing merged PR #6",
+    "manifestSha256": "7217f564dd55105cde78bdea9cb58e6de7798fa16b8a41f20eb0dc45ae014d53",
+    "schemaSha256": "49328c09e519d7640d3bc0d9aad1b2548ae11be24c9b7db7eea2dc2db716aa31",
+    "fixtureVersion": "pr-a-v1",
+    "immutableSourceFiles": 10,
+    "reviewedVisualReferences": 4
+  },
+  "reproducibility": {
+    "operatingSystem": "Windows 10.0.26100 x64",
+    "node": "24.18.0",
+    "npm": "11.16.0",
+    "browser": "Microsoft Edge 151.0.4129.59",
+    "puppeteer": "25.1.0",
+    "chromiumRuntime": "149.0.0",
+    "poppler": "25.07.0",
+    "requiredFonts": ["Arial", "Arial Bold", "Times New Roman"],
+    "provisionalDimensionTolerancePoints": 1,
+    "visualComparison": "exact 120-DPI Poppler raster equality against approved compact references",
+    "calibratedVisualTolerances": "not-yet-calibrated",
+    "performanceThresholds": "none"
+  },
+  "coverage": {
+    "uniqueFixturesAttempted": 17,
+    "uniqueFixturesExecuted": 17,
+    "uniqueFixturesNotExecuted": 0,
+    "logicalExecutions": 24,
+    "requestAttempts": 24,
+    "fixtureInputScopeExecutionCoverage": {
+      "numerator": 38,
+      "denominator": 38,
+      "value": 1,
+      "percentage": 100,
+      "label": "fixture-input-scope-execution-coverage-nonblocking"
+    },
+    "evidenceAvailability": {
+      "numerator": 52,
+      "denominator": 57,
+      "value": 0.9122807017543859,
+      "percentage": 91.23,
+      "label": "evidence-availability-only-nonblocking",
+      "coreRequired": {
+        "numerator": 52,
+        "denominator": 52,
+        "value": 1,
+        "percentage": 100
+      },
+      "optionalToolEvidence": {
+        "numerator": 0,
+        "denominator": 5,
+        "value": 0,
+        "percentage": 0
+      },
+      "unavailableOptionalEvidence": [
+        "qpdf",
+        "veraPDF",
+        "MuPDF",
+        "WeasyPrint",
+        "Vivliostyle"
+      ]
+    }
+  },
+  "metrics": {
+    "supported-basic-pdf": {
+      "uniqueFixturesAttempted": 10,
+      "uniqueFixturesExecuted": 10,
+      "uniqueFixturesNotExecuted": 0,
+      "uniqueFixturesMeetingAllRequiredExpectations": 10,
+      "uniqueFixturesFailingOneOrMoreRequiredExpectations": 0,
+      "pdfsProduced": 10,
+      "structurallyValidPdfs": 10,
+      "correctlyRenderedPdfs": 10,
+      "incorrectlyRenderedPdfs": 0,
+      "failedPdfGenerations": 0,
+      "unsupportedFixtures": 0,
+      "intentionallyRejectedFixtures": 0,
+      "environmentalLimitationFixtures": 0,
+      "auditToolLimitationFixtures": 0,
+      "unavailableFixtures": 0,
+      "productionRate": { "numerator": 10, "denominator": 10, "value": 1, "percentage": 100 },
+      "structuralValidityRate": { "numerator": 10, "denominator": 10, "value": 1, "percentage": 100 },
+      "correctRenderingRate": { "numerator": 10, "denominator": 10, "value": 1, "percentage": 100 },
+      "findingsBySeverity": {},
+      "findingsByCause": {},
+      "affectedFixtures": [],
+      "mainReasons": []
+    },
+    "intentional-policy-rejection": {
+      "uniqueFixturesAttempted": 3,
+      "uniqueFixturesExecuted": 3,
+      "uniqueFixturesNotExecuted": 0,
+      "uniqueFixturesMeetingAllRequiredExpectations": 3,
+      "uniqueFixturesFailingOneOrMoreRequiredExpectations": 0,
+      "pdfsProduced": 0,
+      "structurallyValidPdfs": 0,
+      "correctlyRenderedPdfs": 0,
+      "incorrectlyRenderedPdfs": 0,
+      "failedPdfGenerations": 0,
+      "unsupportedFixtures": 0,
+      "intentionallyRejectedFixtures": 3,
+      "environmentalLimitationFixtures": 0,
+      "auditToolLimitationFixtures": 0,
+      "unavailableFixtures": 0,
+      "productionRate": { "numerator": 0, "denominator": 0, "value": null, "percentage": null },
+      "structuralValidityRate": { "numerator": 0, "denominator": 0, "value": null, "percentage": null },
+      "correctRenderingRate": { "numerator": 0, "denominator": 0, "value": null, "percentage": null },
+      "findingsBySeverity": { "informational": 3 },
+      "findingsByCause": { "documented-policy": 3 },
+      "affectedFixtures": [
+        {
+          "fixtureId": "A-SEC-SCRIPT-01",
+          "result": "intentionally-rejected",
+          "reason": "The service returned the documented unsafe_html rejection."
+        },
+        {
+          "fixtureId": "A-SEC-URL-01",
+          "result": "intentionally-rejected",
+          "reason": "The service returned the documented unsafe_html rejection."
+        },
+        {
+          "fixtureId": "A-SEC-LOCAL-01",
+          "result": "intentionally-rejected",
+          "reason": "The service returned the documented unsafe_html rejection."
+        }
+      ],
+      "mainReasons": ["Three synthetic unsafe-HTML cases returned the documented unsafe_html rejection."]
+    },
+    "unsupported-capability": {
+      "uniqueFixturesAttempted": 1,
+      "uniqueFixturesExecuted": 1,
+      "uniqueFixturesNotExecuted": 0,
+      "uniqueFixturesMeetingAllRequiredExpectations": 0,
+      "uniqueFixturesFailingOneOrMoreRequiredExpectations": 0,
+      "pdfsProduced": 1,
+      "structurallyValidPdfs": 1,
+      "correctlyRenderedPdfs": 0,
+      "incorrectlyRenderedPdfs": 0,
+      "failedPdfGenerations": 0,
+      "unsupportedFixtures": 1,
+      "intentionallyRejectedFixtures": 0,
+      "environmentalLimitationFixtures": 0,
+      "auditToolLimitationFixtures": 0,
+      "unavailableFixtures": 0,
+      "productionRate": { "numerator": 0, "denominator": 0, "value": null, "percentage": null },
+      "structuralValidityRate": { "numerator": 0, "denominator": 0, "value": null, "percentage": null },
+      "correctRenderingRate": { "numerator": 0, "denominator": 0, "value": null, "percentage": null },
+      "findingsBySeverity": { "informational": 1 },
+      "findingsByCause": { "unsupported-feature": 1 },
+      "affectedFixtures": [
+        {
+          "fixtureId": "A-UNSUP-MIXED-01",
+          "result": "unsupported-feature",
+          "reason": "The request contract exposes one format and orientation; the returned uniform PDF does not establish mixed-orientation support."
+        }
+      ],
+      "mainReasons": ["Mixed page orientation remains unsupported under the documented request contract."]
+    },
+    "isolation": {
+      "uniqueFixturesAttempted": 1,
+      "uniqueFixturesExecuted": 1,
+      "uniqueFixturesNotExecuted": 0,
+      "uniqueFixturesMeetingAllRequiredExpectations": 1,
+      "uniqueFixturesFailingOneOrMoreRequiredExpectations": 0,
+      "pdfsProduced": 1,
+      "structurallyValidPdfs": 1,
+      "correctlyRenderedPdfs": 1,
+      "incorrectlyRenderedPdfs": 0,
+      "failedPdfGenerations": 0,
+      "unsupportedFixtures": 0,
+      "intentionallyRejectedFixtures": 0,
+      "environmentalLimitationFixtures": 0,
+      "auditToolLimitationFixtures": 0,
+      "unavailableFixtures": 0,
+      "productionRate": { "numerator": 1, "denominator": 1, "value": 1, "percentage": 100 },
+      "structuralValidityRate": { "numerator": 1, "denominator": 1, "value": 1, "percentage": 100 },
+      "correctRenderingRate": { "numerator": 1, "denominator": 1, "value": 1, "percentage": 100 },
+      "findingsBySeverity": {},
+      "findingsByCause": {},
+      "affectedFixtures": [],
+      "mainReasons": []
+    },
+    "repeatability": {
+      "uniqueFixturesAttempted": 2,
+      "uniqueFixturesExecuted": 2,
+      "uniqueFixturesNotExecuted": 0,
+      "uniqueFixturesMeetingAllRequiredExpectations": 2,
+      "uniqueFixturesFailingOneOrMoreRequiredExpectations": 0,
+      "pdfsProduced": 2,
+      "structurallyValidPdfs": 2,
+      "correctlyRenderedPdfs": 2,
+      "incorrectlyRenderedPdfs": 0,
+      "failedPdfGenerations": 0,
+      "unsupportedFixtures": 0,
+      "intentionallyRejectedFixtures": 0,
+      "environmentalLimitationFixtures": 0,
+      "auditToolLimitationFixtures": 0,
+      "unavailableFixtures": 0,
+      "productionRate": { "numerator": 2, "denominator": 2, "value": 1, "percentage": 100 },
+      "structuralValidityRate": { "numerator": 2, "denominator": 2, "value": 1, "percentage": 100 },
+      "correctRenderingRate": { "numerator": 2, "denominator": 2, "value": 1, "percentage": 100 },
+      "findingsBySeverity": {},
+      "findingsByCause": {},
+      "affectedFixtures": [],
+      "mainReasons": []
+    },
+    "overall": {
+      "uniqueFixturesAttempted": 17,
+      "uniqueFixturesExecuted": 17,
+      "uniqueFixturesNotExecuted": 0,
+      "uniqueFixturesMeetingAllRequiredExpectations": 16,
+      "uniqueFixturesFailingOneOrMoreRequiredExpectations": 0,
+      "pdfsProduced": 14,
+      "structurallyValidPdfs": 14,
+      "correctlyRenderedPdfs": 13,
+      "incorrectlyRenderedPdfs": 0,
+      "failedPdfGenerations": 0,
+      "unsupportedFixtures": 1,
+      "intentionallyRejectedFixtures": 3,
+      "environmentalLimitationFixtures": 0,
+      "auditToolLimitationFixtures": 0,
+      "unavailableFixtures": 0,
+      "productionRate": { "numerator": 13, "denominator": 13, "value": 1, "percentage": 100 },
+      "structuralValidityRate": { "numerator": 13, "denominator": 13, "value": 1, "percentage": 100 },
+      "correctRenderingRate": { "numerator": 13, "denominator": 13, "value": 1, "percentage": 100 },
+      "findingsBySeverity": { "informational": 4 },
+      "findingsByCause": { "documented-policy": 3, "unsupported-feature": 1 },
+      "affectedFixtures": [
+        "A-SEC-SCRIPT-01",
+        "A-SEC-URL-01",
+        "A-SEC-LOCAL-01",
+        "A-UNSUP-MIXED-01"
+      ],
+      "mainReasons": [
+        "Three intentionally rejected fixtures returned the documented unsafe_html policy response.",
+        "One mixed-orientation fixture remains classified unsupported despite returning a structurally valid uniform PDF."
+      ]
+    }
+  },
+  "findings": {
+    "bySeverity": { "informational": 4 },
+    "byCause": { "documented-policy": 3, "unsupported-feature": 1 },
+    "confirmedServiceDefects": 0
+  },
+  "repeatabilityEvidence": {
+    "scenarios": 2,
+    "semanticStructureEqual": 2,
+    "extractedTextEqual": 2,
+    "pdfBytesEqual": 0,
+    "pdfBytesNote": "Volatile PDF metadata kept byte hashes different; this did not alter structure, text, or the reviewed basic-page raster.",
+    "visualRasterEqual": 1,
+    "visualRasterMeasured": 1,
+    "visualRasterUnavailable": 1,
+    "label": "repeatability-only-not-visual-correctness"
+  },
+  "evidenceLimitations": [
+    "This is a compact Windows local-route baseline, not CI, Preview, or Production evidence.",
+    "Visual thresholds have not been calibrated across environments; exact reference comparison is provisional and nonblocking.",
+    "qpdf, veraPDF, MuPDF, WeasyPrint, and Vivliostyle were unavailable and optional; evidence availability is 52/57 rather than treating those tools as collected.",
+    "Accessibility, broad international fonts, load/capacity, competitor services, and full caller templates are deferred to PR B or separately authorized work."
+  ],
+  "previewEvidence": "not-collected-in-this-local-baseline",
+  "productionEvidence": "not-collected",
+  "decisionBoundary": "No minimum quality result blocks audit completion. Caller activation and Production release are separate later decisions."
+}

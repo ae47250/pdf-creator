@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Synthetic Embedded Assets Benchmark</title>
+  <style>
+    @page { size: A4 landscape; margin: 0; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #152439; background: #fff; font-family: Arial, Helvetica, sans-serif; }
+    [data-pdf-page] { width: 11.69in; height: 8.267in; padding: 0.42in; overflow: hidden; background: linear-gradient(135deg, #f8fbff 0%, #e6f2ee 100%); }
+    header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 0.18in; border-bottom: 3px solid #2f72b7; }
+    h1 { margin: 0; font-size: 28pt; }
+    .pixel-mark { width: 0.58in; height: 0.58in; image-rendering: pixelated; border: 8px solid #2f72b7; border-radius: 50%; background: #2f72b7; }
+    .layout { display: grid; grid-template-columns: 2fr 1fr; gap: 0.28in; margin-top: 0.28in; }
+    .chart { width: 100%; height: 3.25in; object-fit: contain; border: 1px solid #a9bed3; border-radius: 12px; background: #fff; }
+    .facts { display: grid; gap: 0.14in; }
+    .fact { padding: 0.18in; border-radius: 10px; background: rgba(255,255,255,.88); border-left: 7px solid #2f9b76; }
+    .fact strong { display: block; color: #183b66; font-size: 18pt; }
+    footer { margin-top: 0.25in; display: flex; justify-content: space-between; padding-top: 0.14in; border-top: 1px solid #a9bed3; color: #516274; font-size: 10pt; }
+  </style>
+</head>
+<body>
+  <section data-pdf-page>
+    <header>
+      <div><p style="margin:0 0 4pt;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#2f72b7">Synthetic benchmark</p><h1>Embedded Assets and Backgrounds</h1></div>
+      <img class="pixel-mark" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=" alt="Blue square PNG mark">
+    </header>
+    <main class="layout">
+      <img class="chart" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI3MjAiIGhlaWdodD0iMzAwIiB2aWV3Qm94PSIwIDAgNzIwIDMwMCI+PHJlY3Qgd2lkdGg9IjcyMCIgaGVpZ2h0PSIzMDAiIHJ4PSIxOCIgZmlsbD0iI2VkZjRmZiIvPjxsaW5lIHgxPSI3MCIgeTE9IjI0NSIgeDI9IjY3MCIgeTI9IjI0NSIgc3Ryb2tlPSIjMTgzYjY2IiBzdHJva2Utd2lkdGg9IjQiLz48cmVjdCB4PSIxMjUiIHk9IjE1NSIgd2lkdGg9IjkwIiBoZWlnaHQ9IjkwIiBmaWxsPSIjMmY3MmI3Ii8+PHJlY3QgeD0iMzE1IiB5PSIxMDUiIHdpZHRoPSI5MCIgaGVpZ2h0PSIxNDAiIGZpbGw9IiMyZjliNzYiLz48cmVjdCB4PSI1MDUiIHk9IjU1IiB3aWR0aD0iOTAiIGhlaWdodD0iMTkwIiBmaWxsPSIjZTI4YTMyIi8+PHRleHQgeD0iNzAiIHk9IjM4IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjIiIGZpbGw9IiMxODNiNjYiPlN5bnRoZXRpYyBxdWFydGVybHkgaW5kZXg8L3RleHQ+PC9zdmc+" alt="Synthetic quarterly index chart with three bars">
+      <aside class="facts">
+        <div class="fact"><span>First index</span><strong>84</strong><small>Fictional units</small></div>
+        <div class="fact"><span>Second index</span><strong>131</strong><small>Fictional units</small></div>
+        <div class="fact"><span>Third index</span><strong>179</strong><small>Fictional units</small></div>
+      </aside>
+    </main>
+    <footer><span>PNG, SVG, gradient, borders, and print backgrounds</span><span>A4 landscape - page 1 of 1</span></footer>
+  </section>
+</body>
+</html>
