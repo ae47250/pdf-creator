@@ -78,6 +78,31 @@ The Preview evidence requires a focused later investigation of the
 remediation pull request. It does not justify a service fix in this audit PR,
 caller activation, or a Production-release decision.
 
+## Focused PR #8 Preview confirmation
+
+The later pinned-font confirmation ran against Preview deployment
+`dpl_4XToHMzxGwNsYhwNkdCSaaFmMNuc` from PR #8 commit
+`c966204d4db718590f81a34f59f990a5241a495a`. It is separate Preview evidence;
+it does not overwrite the original PR A local or PR #7 Preview baseline.
+The fixed budget completed exactly: 2 safety GETs plus 4 sequential POSTs, with
+no retry. Health and authenticated diagnostics both returned HTTP 200, and the
+diagnostics evidence reported `caller=test` and `storageEnvironment=test`.
+Every POST used `storeResult:false` and `storeHtml:false`.
+
+| Fixture category | Unique fixtures attempted | Unique fixtures executed | PDFs produced | Structurally valid PDFs | Correctly rendered PDFs | Incorrectly rendered PDFs | Failed PDF generations | Unsupported fixtures | Intentionally rejected fixtures | Unavailable fixtures | PDF-production rate | Structural-validity rate | Correct-rendering rate | Main failure or limitation reasons |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|---|
+| Supported basic PDF | 2 | 2 | 2 | 2 | 1 | 1 | 0 | 0 | 0 | 0 | 2/2 (100.00%) | 2/2 (100.00%) | 1/2 (50.00%) | Three repeat A-BASIC-01 executions had an exact approved-reference mismatch; nonblocking |
+| **Overall** | **2** | **2** | **2** | **2** | **1** | **1** | **0** | **0** | **0** | **0** | **2/2 (100.00%)** | **2/2 (100.00%)** | **1/2 (50.00%)** | **One unique affected fixture, three visual-mismatch finding events** |
+
+`A-BASIC-01` produced a PDF and passed structural, text, geometry, and
+metadata expectations in all three executions. Its identical Preview raster
+hash was `8540cf1ba3124ab8980810aa8035e980aba88ab2f53962b328b983be21dd55dd`,
+not the reviewed reference hash
+`7cae94affafb3eebf7be7e32a6379b554bf01a7e96a4bee71334071dd9172ea0`.
+This is repeatability evidence for the mismatch, not visual correctness. No
+reference, tolerance, caller, or Production setting changed. The finding
+remains nonblocking and belongs to a later focused remediation investigation.
+
 ## Raw unique-fixture results
 
 | Fixture category | Unique fixtures attempted | Unique fixtures executed | Not executed | PDFs produced | Structurally valid PDFs | Correctly rendered PDFs | Incorrectly rendered PDFs | Failed PDF generations | Unsupported fixtures | Intentionally rejected fixtures | Environmental limitations | Audit fixture/tool limitations | Unavailable fixtures | PDF-production rate | Structural-validity rate | Correct-rendering rate | Main failure or limitation reasons |

@@ -19,8 +19,9 @@ correction; the service renderer and caller HTML are unchanged.
 A new candidate was deliberately reviewed before approval and replaces only the
 `A-BASIC-01` compact reference. It is structurally correct and the locally
 generated ordinary run plus three repeat runs have identical raster evidence.
-Preview confirmation remains required; this local approval is not a claim that
-the deployed service has already passed.
+The completed Preview confirmation is separately recorded below. It still has
+an exact reference mismatch, so this local approval is not a claim that the
+deployed service passed visual correctness.
 
 ## Evidence
 
@@ -91,11 +92,12 @@ hash, image hash, and font provenance. A remaining Preview mismatch must still
 be reported as a mismatch; it cannot be hidden through replacement or a
 tolerance relaxation.
 
-## Proposed Preview confirmation after review
+## Completed Preview confirmation
 
-This investigation sends no new Preview request. After review, use a new,
-separately authorized maximum budget of **6 HTTP requests**, sequential with no
-retries:
+The approved six-request campaign completed on Preview deployment
+`dpl_4XToHMzxGwNsYhwNkdCSaaFmMNuc`, built from PR #8 commit
+`c966204d4db718590f81a34f59f990a5241a495a`. It used exactly **6 HTTP
+requests**, sequentially with no retries:
 
 | Order | Request | Purpose |
 |---:|---|---|
@@ -104,15 +106,12 @@ retries:
 | 3-5 | `POST A-BASIC-01` three times | Measure Preview repeatability and compare with the explicitly approved visual method. |
 | 6 | `POST A-FLOW-01` once | Confirm the remediation did not alter an unrelated Preview fixture. |
 
-Every POST must use `storeResult:false` and `storeHtml:false`, remain below the
-existing 100,000-byte input and 4,000,000-byte output limits, and run at
-concurrency one. Each initiated POST consumes its request slot regardless of
-success, timeout, or visual outcome. Stop only for safety, authorization,
-credential, budget, platform-protection, external-service, or genuine
-technical constraints—not for a visual mismatch or low metric.
-
-Before that campaign, configure only this branch's Vercel Preview scope with
-the six confirmed non-Production test variables:
+Health returned HTTP 200 with `status=ok`. Authenticated diagnostics returned
+HTTP 200 with `status=ok`, `caller=test`, and `storageEnvironment=test`.
+Every POST used `storeResult:false` and `storeHtml:false`, stayed within the
+100,000-byte input and 4,000,000-byte output limits, and ran at concurrency
+one. The six branch-scoped sensitive Preview variables were the following test
+configuration names only:
 
 - `PDF_CREATION_TEST`
 - `PDF_CREATION_R2_ENVIRONMENT`
@@ -121,8 +120,35 @@ the six confirmed non-Production test variables:
 - `PDF_CREATION_R2_BUCKET_NAME`
 - `PDF_CREATION_R2_ACCOUNT_ID`
 
-The local runner must use the generated branch Preview hostname, its calculated
-hostname SHA-256 pin, the synthetic Preview key, and an optional deployment
-protection bypass secret. Do not copy values into Production, general Preview,
-Development, another branch, Git, or test artifacts. Label the resulting
-evidence as Preview-only, not Production evidence.
+No value was copied into Production, general Preview, Development, another
+branch, Git, or test artifacts. The runner used the generated deployment
+hostname and its SHA-256 pin. This is Preview-only evidence, not Production
+evidence.
+
+### Raw result
+
+The campaign had two unique supported-basic fixtures: `A-BASIC-01` and
+`A-FLOW-01`. Both returned a PDF and both were structurally valid: production
+rate **2/2 (100.00%)** and structural-validity rate **2/2 (100.00%)**.
+`A-FLOW-01` met all required expectations. `A-BASIC-01` was executed three
+times and each result was an exact visual-reference mismatch, so the
+unique-fixture correct-rendering rate was **1/2 (50.00%)**. There were no
+generation failures, unsupported fixtures, intentional rejections, or
+unavailable fixtures in this small confirmation lane.
+
+All three `A-BASIC-01` rasters had the same candidate SHA-256
+`8540cf1ba3124ab8980810aa8035e980aba88ab2f53962b328b983be21dd55dd`,
+which differs from the reviewed reference
+`7cae94affafb3eebf7be7e32a6379b554bf01a7e96a4bee71334071dd9172ea0`.
+This establishes Preview repeatability of the mismatch; it does not establish
+visual correctness. The Preview PDF inspection observed two embedded
+`OpenSans-Regular` subsets, while the local candidate had separate
+`Open-Sans-Bold` and `Open-Sans` subsets. This is an observation for a later
+focused investigation, not a confirmed renderer defect or a reason to weaken
+the approved reference.
+
+The three A-BASIC-01 durations were 4,369 ms, 1,881 ms, and 976 ms; the
+A-FLOW-01 duration was 426 ms. These are informational measurements only.
+The completed mismatch is a nonblocking finding. It did not trigger a retry,
+reference replacement, tolerance change, caller activation, or any Production
+action.
