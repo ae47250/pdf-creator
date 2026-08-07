@@ -63,6 +63,7 @@ export default function ConsoleForm({ appABaseline }: { appABaseline: string }) 
         },
         ...(expectedPageCount ? { expectedPageCount: Number(expectedPageCount) } : {}),
         ...(storeResult ? { retentionDays: Number(retentionDays) } : {}),
+        ...(storeResult ? { idempotencyKey: `console:${crypto.randomUUID()}` } : {}),
         correlationId: `console-${Date.now()}`
       };
       const response = await fetch('/api/console/pdfs', {

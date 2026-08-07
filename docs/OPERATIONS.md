@@ -75,6 +75,19 @@ Lifecycle rules must be configured and live-verified separately:
 
 New objects use `reports/retention-{days}/{uuid}/{Caller}/report.pdf`, optional `rendered.html`, and `reports/retention-{days}/{uuid}/manifest.json`. Retain temporary legacy `{Caller}/reports/retention-*` lifecycle rules until at least 32 days after the last old-layout deployment. The recipient route enforces the exact one-, seven-, or 30-day deadline from the manifest. Lifecycle deletion is the cleanup backstop. The service conditionally creates artifacts before the manifest and cleans only writes confirmed successful; an ambiguous timed-out write is left for lifecycle rather than risking deletion of an existing object. No business JSON is stored.
 
+Artifact ownership and deletion are intentionally separate:
+
+| Artifact | Logical availability | Automated deletion owner |
+| --- | --- | --- |
+| Stored PDF | Exact 1, 7, or 30 days from its manifest | Private report route enforces expiry; R2 deletes its retention prefix after 2, 8, or 31 days |
+| Optional stored HTML | Same report expiry as its PDF | Same retention prefix and R2 rule as the PDF |
+| Report manifest metadata | Same report expiry as its PDF | Same retention prefix and R2 rule as the PDF |
+| Idempotency mapping | Unusable after the linked report's exact expiry | Conditional application cleanup on reuse; caller-prefix R2 rule after 31 days |
+| Failed job | No durable job record is created | Confirmed partial writes are deleted immediately; an ambiguous write stays under the selected report-retention prefix for its R2 backstop |
+| Temporary artifact | The application creates no local or R2 temporary object in the normal request path | Browser/page resources close after each attempt; preserve the one-day `temporary-uploads/` R2 rule for legacy or separately approved future use |
+
+R2 owns physical deletion; the service owns exact report unavailability and safe cleanup of confirmed writes. Lifecycle-rule changes and Production deletion observations remain separately authorized operations. Repository tests verify paths and logical expiries but do not claim that Production lifecycle deletion has occurred.
+
 ### Isolated Preview identity check
 
 Use one private test bucket with no `r2.dev` or custom domain, and Object Read & Write credentials scoped only to that bucket. Scope those values to the verification Preview branch and compare the configured bucket exactly with the separately recorded approved test bucket.

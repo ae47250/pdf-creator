@@ -16,10 +16,19 @@ const valid = {
 describe('PDF creation contract', () => {
   it('normalizes direct and stored defaults', () => {
     expect(parsePdfCreationRequest(valid)).toMatchObject({ storeHtml: false });
-    expect(parsePdfCreationRequest({ ...valid, storeResult: true })).toMatchObject({
+    expect(parsePdfCreationRequest({ ...valid, storeResult: true, idempotencyKey: 'operation:12345678' })).toMatchObject({
       storeHtml: true,
       retentionDays: 30
     });
+  });
+
+  it('requires one stable idempotency key for every stored request', () => {
+    expect(() => parsePdfCreationRequest({ ...valid, storeResult: true }))
+      .toThrowError(PdfServiceError);
+  });
+
+  it('preserves ordinary direct requests without storage or idempotency fields', () => {
+    expect(parsePdfCreationRequest(valid)).toEqual({ ...valid, storeHtml: false });
   });
 
   it.each([

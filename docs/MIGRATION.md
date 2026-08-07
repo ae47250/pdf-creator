@@ -29,7 +29,7 @@ Passing the service tests does not make an unchanged caller reliable. EconPlanne
 - Require a valid `Retry-After` header. Wait for the greater of that value and full jitter from zero through `min(4 seconds, 2^(retryNumber-1) seconds)`.
 - Do not start an attempt after the deadline.
 - Return `429 rate_limited` as a recoverable user message; do not keep an interactive request open for 60 seconds.
-- Create one idempotency key before the first stored attempt and reuse it for busy retries and later recovery. A changed semantic payload gets a new key.
+- Create one opaque idempotency key before the first stored attempt and reuse it for busy retries and later recovery. A changed semantic payload gets a new key. Use a random UUID or an application operation ID; never derive the key from HTML, credentials, names, email addresses, or other personal information.
 - Direct requests never send an idempotency key and retry only a pre-render `renderer_busy`; do not automatically retry direct timeouts or ambiguous 5xx responses.
 - Keep API credentials on the server.
 
