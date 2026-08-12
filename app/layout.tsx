@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'PDF Creation Service',
+  title: 'PDF Creator',
   description: 'Internal authenticated HTML-to-PDF service and testing console.',
   robots: { index: false, follow: false, noarchive: true }
 };

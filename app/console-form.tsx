@@ -108,26 +108,30 @@ export default function ConsoleForm({ appABaseline }: { appABaseline: string }) 
 
   return (
     <div className="console-grid">
-      <section className="panel">
+      <section className="panel wide smoke-panel">
         <h2>Plain-text smoke test</h2>
         <label htmlFor="smoke-text">Fictional text</label>
-        <textarea id="smoke-text" rows={4} value={smokeText} onChange={(event) => setSmokeText(event.target.value)} />
+        <textarea id="smoke-text" rows={3} value={smokeText} onChange={(event) => setSmokeText(event.target.value)} />
         <button type="button" className="secondary" onClick={() => { setHtml(smokeHtml(smokeText)); setExpectedPageCount('1'); setStatus('Smoke-test HTML prepared.'); }}>Prepare smoke-test HTML</button>
       </section>
 
-      <section className="panel wide">
+      <section className="panel wide html-panel">
         <h2>Completed self-contained HTML</h2>
-        <label htmlFor="fixture">Saved fixture</label>
-        <select id="fixture" value={fixture} onChange={(event) => loadFixture(event.target.value as FixtureName)}>
-          <option value="onePage">Generic one-page</option>
-          <option value="flowing">Generic flowing multi-page</option>
-          <option value="fixed">Generic fixed-page markers</option>
-          <option value="appA">Mr. Lombardi frozen baseline (non-production)</option>
-        </select>
-        <label htmlFor="html-upload">Upload .html</label>
-        <input id="html-upload" type="file" accept=".html,text/html" onChange={(event) => void upload(event.target.files?.[0])} />
+        <div className="source-controls">
+          <label htmlFor="fixture">Saved fixture
+            <select id="fixture" value={fixture} onChange={(event) => loadFixture(event.target.value as FixtureName)}>
+              <option value="onePage">Generic one-page</option>
+              <option value="flowing">Generic flowing multi-page</option>
+              <option value="fixed">Generic fixed-page markers</option>
+              <option value="appA">Mr. Lombardi frozen baseline (non-production)</option>
+            </select>
+          </label>
+          <label htmlFor="html-upload">Upload .html
+            <input id="html-upload" type="file" accept=".html,text/html" onChange={(event) => void upload(event.target.files?.[0])} />
+          </label>
+        </div>
         <label htmlFor="html">HTML ({new Blob([html]).size.toLocaleString()} bytes)</label>
-        <textarea id="html" className="code" rows={15} value={html} onChange={(event) => setHtml(event.target.value)} />
+        <textarea id="html" className="code" rows={10} value={html} onChange={(event) => setHtml(event.target.value)} />
       </section>
 
       <section className="panel wide controls">
