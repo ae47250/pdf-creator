@@ -31,6 +31,11 @@ describe('PDF creation contract', () => {
     expect(parsePdfCreationRequest(valid)).toEqual({ ...valid, storeHtml: false });
   });
 
+  it('keeps expectedPageCount optional while preserving an explicit exact assertion', () => {
+    expect(parsePdfCreationRequest(valid).expectedPageCount).toBeUndefined();
+    expect(parsePdfCreationRequest({ ...valid, expectedPageCount: 3 }).expectedPageCount).toBe(3);
+  });
+
   it.each([
     [{ ...valid, extra: true }],
     [{ ...valid, filename: '../unsafe.pdf' }],

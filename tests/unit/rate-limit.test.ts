@@ -25,7 +25,8 @@ describe('programmatic Firewall rate limiting', () => {
     firewall.unstable_checkRateLimit.mockResolvedValue({ rateLimited: false });
     renderer.renderPdf.mockResolvedValue({
       pdf: new Uint8Array([37, 80, 68, 70]), renderedHtml: request.html, pageCount: 1,
-      pageDimensions: [{ widthPoints: 612, heightPoints: 792 }], sha256: 'a'.repeat(64), markerCount: 0
+      pageDimensions: [{ widthPoints: 612, heightPoints: 792 }], sha256: 'a'.repeat(64), markerCount: 0,
+      renderer: { source: 'installed', product: 'Chrome', version: '149.0.0.0' }, layoutDiagnostics: null
     });
   });
 
@@ -63,7 +64,8 @@ describe('programmatic Firewall rate limiting', () => {
     renderer.renderPdf.mockImplementationOnce(() => new Promise((resolve) => {
       finishRender = () => resolve({
         pdf: new Uint8Array([37, 80, 68, 70]), renderedHtml: request.html, pageCount: 1,
-        pageDimensions: [{ widthPoints: 612, heightPoints: 792 }], sha256: 'a'.repeat(64), markerCount: 0
+        pageDimensions: [{ widthPoints: 612, heightPoints: 792 }], sha256: 'a'.repeat(64), markerCount: 0,
+        renderer: { source: 'installed', product: 'Chrome', version: '149.0.0.0' }, layoutDiagnostics: null
       });
     }));
     const first = createPdf(request, caller, 'first', 'https://service.example');

@@ -4,8 +4,8 @@ import { invalidScenarios, malformedCssScenario, payloadFor, requiredScenarioIds
 
 describe('production regression fixture catalog', () => {
   it('maps every required fixture category to a stable scenario', () => {
-    expect(requiredScenarioIds).toHaveLength(21);
-    expect(new Set(requiredScenarioIds).size).toBe(21);
+    expect(requiredScenarioIds).toHaveLength(22);
+    expect(new Set(requiredScenarioIds).size).toBe(22);
     expect(invalidScenarios).toHaveLength(7);
     expect(malformedCssScenario.id).toBe('malformed-css');
   });
@@ -25,5 +25,10 @@ describe('production regression fixture catalog', () => {
     expect(successFixtures.appGold.html).toContain('#8a5a00');
     expect(successFixtures.appBlue.html).not.toContain('Application Gold');
     expect(successFixtures.appGold.html).not.toContain('Application Blue');
+  });
+
+  it('keeps natural-flow qualification fixtures free of fixed markers and exact page assertions', () => {
+    expect(successFixtures.flowing20.html).not.toContain('data-pdf-page');
+    expect(payloadFor(successFixtures.flowing20)).not.toHaveProperty('expectedPageCount');
   });
 });

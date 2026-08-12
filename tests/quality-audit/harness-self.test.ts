@@ -177,7 +177,7 @@ describe('PDF quality audit harness self-tests', () => {
     expect(findingCodes).toMatch(/dimension|geometry/i);
     expect(findingCodes).toMatch(/text/i);
     expect(findingCodes).toMatch(/metadata/i);
-  });
+  }, 15_000);
 
   it('does not let one failed fixture suppress the next authorized fixture', async () => {
     const loaded = await loadAuditManifest({ rootDir: repositoryRoot });

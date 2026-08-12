@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { PDFDocument } from 'pdf-lib';
+import { PDFArray, PDFDocument, PDFName, PDFNull } from 'pdf-lib';
 import { PdfServiceError } from './errors';
 import { LIMITS, PAGE_POINTS } from './limits';
 import type { PageDimension, PdfCreationRequest, PdfMetadata, RenderResult } from './types';
@@ -10,7 +10,7 @@ export async function finalizeAndValidatePdf(
   caller: string,
   markerCount: number,
   renderedHtml: string
-): Promise<RenderResult> {
+): Promise<Omit<RenderResult, 'renderer' | 'layoutDiagnostics'>> {
   if (input.byteLength < 5 || new TextDecoder().decode(input.subarray(0, 5)) !== '%PDF-') {
     throw new PdfServiceError('pdf_invalid', 500, 'The renderer did not create a valid PDF.');
   }
@@ -75,14 +75,73 @@ export async function countPdfPages(bytes: Uint8Array): Promise<number> {
   }
 }
 
-export async function mergePdfPages(documents: Uint8Array[]): Promise<Uint8Array> {
+export interface InternalPdfLink {
+  sourcePageIndex: number;
+  targetPageIndex: number;
+  leftPixels: number;
+  topPixels: number;
+  widthPixels: number;
+  heightPixels: number;
+  targetTopPixels: number;
+}
+
+export async function mergePdfPages(
+  documents: Uint8Array[],
+  internalLinks: InternalPdfLink[] = []
+): Promise<Uint8Array> {
   const merged = await PDFDocument.create();
   for (const bytes of documents) {
     const source = await PDFDocument.load(bytes, { updateMetadata: false });
     const pages = await merged.copyPages(source, source.getPageIndices());
     for (const page of pages) merged.addPage(page);
   }
+  addInternalLinks(merged, internalLinks);
   return merged.save({ useObjectStreams: true });
+}
+
+function addInternalLinks(document: PDFDocument, links: InternalPdfLink[]): void {
+  const pages = document.getPages();
+  for (const link of links) {
+    const source = pages[link.sourcePageIndex];
+    const target = pages[link.targetPageIndex];
+    if (!source || !target) continue;
+    const sourceHeight = source.getHeight();
+    const targetHeight = target.getHeight();
+    const x1 = clamp(points(link.leftPixels), 0, source.getWidth());
+    const x2 = clamp(points(link.leftPixels + link.widthPixels), x1, source.getWidth());
+    const y1 = clamp(sourceHeight - points(link.topPixels + link.heightPixels), 0, sourceHeight);
+    const y2 = clamp(sourceHeight - points(link.topPixels), y1, sourceHeight);
+    if (x2 - x1 <= 0 || y2 - y1 <= 0) continue;
+
+    let annotations = source.node.lookupMaybe(PDFName.of('Annots'), PDFArray);
+    if (!annotations) {
+      annotations = document.context.obj([]);
+      source.node.set(PDFName.of('Annots'), annotations);
+    }
+    const destination = document.context.obj([
+      target.ref,
+      PDFName.of('XYZ'),
+      PDFNull,
+      clamp(targetHeight - points(link.targetTopPixels), 0, targetHeight),
+      PDFNull
+    ]);
+    const annotation = document.context.obj({
+      Type: 'Annot',
+      Subtype: 'Link',
+      Rect: [x1, y1, x2, y2],
+      Border: [0, 0, 0],
+      Dest: destination
+    });
+    annotations.push(document.context.register(annotation));
+  }
+}
+
+function points(pixels: number): number {
+  return pixels * 0.75;
+}
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.min(maximum, Math.max(minimum, value));
 }
 
 export function sha256(value: Uint8Array | string): string {

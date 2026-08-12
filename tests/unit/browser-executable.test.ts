@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { resolveBrowserExecutable } from '@/lib/pdf/renderer';
+import { rendererIdentityFromVersion, resolveBrowserExecutable } from '@/lib/pdf/renderer';
 
 const windowsChrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const windowsEdge = 'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe';
@@ -14,6 +14,13 @@ function existing(...paths: string[]): (path: string) => boolean {
 }
 
 describe('browser executable resolution', () => {
+  it.each([
+    ['HeadlessChrome/149.0.7758.0', true, { source: 'installed', product: 'HeadlessChrome', version: '149.0.7758.0' }],
+    ['Chromium/149.0.7758.0', false, { source: 'bundled', product: 'Chromium', version: '149.0.7758.0' }]
+  ] as const)('records the actual browser identity for %s', (version, local, expected) => {
+    expect(rendererIdentityFromVersion(version, local)).toEqual(expected);
+  });
+
   it('gives an explicit CHROME_PATH first priority', async () => {
     const bundledExecutablePath = vi.fn(async () => 'bundled-chromium');
     const result = await resolveBrowserExecutable({

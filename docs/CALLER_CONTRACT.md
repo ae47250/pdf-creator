@@ -8,6 +8,8 @@ A caller sends one completed, self-contained HTML document and receives one vali
 
 The caller owns its calculations, facts, templates, HTML, CSS, fonts, images, citations, filename, expected page count, and visual acceptance. Application-specific CSS stays in the caller; the shared service does not contain caller selectors or business rules. Assets must be embedded data URLs. When typography must be repeatable, the caller must embed and pin a WOFF2 font version rather than depend on an operating-system font.
 
+`expectedPageCount` is an optional exact assertion, not a pagination instruction. Fixed-page documents and other deliberately paginated documents should use it when the caller knows the required count. Ordinary natural-flow documents should normally omit it unless exact page count is itself an application requirement. A supplied value remains strict: a different generated count returns `422 expected_page_count_mismatch`, and fixed-page marker/count validation is unchanged.
+
 ## Authentication and limits
 
 - Send `Authorization: Bearer <application-key>` from server-side code only. Never expose the key to browser code, HTML, logs, or stored metadata.

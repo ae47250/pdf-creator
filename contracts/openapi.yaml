@@ -13,6 +13,8 @@ paths:
         the same semantic payload returns the original report; reusing it with a
         different semantic payload returns 409 idempotency_conflict. Direct
         requests set storeResult and storeHtml to false and omit idempotencyKey.
+        expectedPageCount is an optional exact assertion suited to fixed-page or
+        deliberately paginated documents; natural-flow callers normally omit it.
       security:
         - bearerAuth: []
       requestBody:
