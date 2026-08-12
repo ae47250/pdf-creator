@@ -19,9 +19,11 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     <main className="page-shell">
       <header className="intro">
         <Image className="urveska-logo" src="/urveska-logo.png" alt="Urveska" width={934} height={147} priority />
-        <Image className="lombardi-photo" src="/mr-lombardi-drums.png" alt="Mr. Lombardi playing drums" width={1728} height={972} priority />
+        <div className="lombardi-photo-frame">
+          <Image className="lombardi-photo" src="/mr-lombardi-drums.png" alt="Mr. Lombardi playing drums" fill sizes="(max-width: 760px) 100vw, 26vw" priority />
+        </div>
         <p className="eyebrow">Internal service</p>
-        <h1>PDF Creation Service</h1>
+        <h1>PDF Creator</h1>
         <p>This shared backend receives completed, self-contained HTML from Urveska applications and converts it into a validated PDF, with optional Cloudflare view and download links. Each application owns its own report layout, CSS, fonts, logos, images, and content. The controls and generated links below are for testing only; production applications use this service automatically in the background.</p>
         <p className="notice">This is an internal testing console, not a general public file converter. It does not convert Word, Excel, PowerPoint, images, arbitrary URLs, or arbitrary files. Use only fictional or non-sensitive data. Anyone with an open generated report URL can access it during this phase.</p>
       </header>
