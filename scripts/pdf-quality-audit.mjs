@@ -1899,7 +1899,13 @@ async function inspectRequiredFonts() {
         ['Arial Bold', 'C:\\Windows\\Fonts\\arialbd.ttf'],
         ['Times New Roman', 'C:\\Windows\\Fonts\\times.ttf']
       ]
-    : [];
+    : process.platform === 'darwin'
+      ? [
+          ['Arial', '/System/Library/Fonts/Supplemental/Arial.ttf'],
+          ['Arial Bold', '/System/Library/Fonts/Supplemental/Arial Bold.ttf'],
+          ['Times New Roman', '/System/Library/Fonts/Supplemental/Times New Roman.ttf']
+        ]
+      : [];
   if (candidates.length === 0) {
     return {
       classification: 'unsuitable-for-current-environment',

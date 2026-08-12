@@ -37,14 +37,15 @@ const response = await fetch(`${process.env.PDF_CREATION_API_URL}/api/v1/pdfs`, 
       format: 'Letter',
       orientation: 'portrait',
       marginsInches: { top: 0.5, right: 0.5, bottom: 0.5, left: 0.5 }
-    },
-    expectedPageCount: 1
+    }
   })
 });
 
 if (!response.ok) throw new Error(JSON.stringify(await response.json()));
 const pdf = Buffer.from(await response.arrayBuffer());
 ```
+
+`expectedPageCount` is an exact assertion. Use it for fixed-page or deliberately paginated output; natural-flow callers should normally omit it unless the application requires an exact count.
 
 The service can reject a request before rendering with `429 renderer_busy` and `Retry-After: 1`. Calling applications must follow the [shared caller contract](docs/CALLER_CONTRACT.md) and the bounded rollout procedure in [Migration](docs/MIGRATION.md). A `429 rate_limited` response uses `Retry-After: 60` and should be returned to the user rather than held open. Production remains limited to 10 accepted render requests per caller per 60 seconds; Preview may use 30 only for controlled verification.
 

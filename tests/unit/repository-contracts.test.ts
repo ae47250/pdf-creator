@@ -20,6 +20,7 @@ describe('repository contracts', () => {
     expect(openapi).toContain('renderer_busy` uses Retry-After 1');
     expect(openapi).toContain('requests require a caller-generated idempotencyKey');
     expect(openapi).toContain('different semantic request');
+    expect(openapi).toContain('natural-flow callers normally omit it');
     expect(openapi).toContain('$ref: ./pdf-creation.schema.json');
     expect(openapi).not.toContain('renderMode');
     expect(openapi).not.toContain('sourceApp');
@@ -35,5 +36,8 @@ describe('repository contracts', () => {
     expect(contract).toContain('must not contain HTML, credentials, personal information');
     expect(contract).toContain('Application-specific CSS stays in the caller');
     expect(contract).toContain('No caller is activated by this contract');
+    expect(contract).toContain('optional exact assertion, not a pagination instruction');
+    expect(contract).toContain('Ordinary natural-flow documents should normally omit it');
+    expect(contract).toContain('fixed-page marker/count validation is unchanged');
   });
 });

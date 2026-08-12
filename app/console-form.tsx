@@ -20,6 +20,7 @@ export default function ConsoleForm({ appABaseline }: { appABaseline: string }) 
   const [result, setResult] = useState<Result | null>(null);
   const [previewHtml, setPreviewHtml] = useState('');
   const [directPdfUrl, setDirectPdfUrl] = useState('');
+  const [directPdfFilename, setDirectPdfFilename] = useState('');
   const busy = status === 'Creating PDF…';
 
   useEffect(() => () => { if (directPdfUrl) URL.revokeObjectURL(directPdfUrl); }, [directPdfUrl]);
@@ -46,10 +47,12 @@ export default function ConsoleForm({ appABaseline }: { appABaseline: string }) 
   }
 
   async function submit() {
+    const requestedFilename = filename;
     setStatus('Creating PDF…');
     setResult(null);
     if (directPdfUrl) URL.revokeObjectURL(directPdfUrl);
     setDirectPdfUrl('');
+    setDirectPdfFilename('');
     try {
       const payload = {
         html,
@@ -81,6 +84,7 @@ export default function ConsoleForm({ appABaseline }: { appABaseline: string }) 
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
         setDirectPdfUrl(url);
+        setDirectPdfFilename(requestedFilename);
         setResult({
           status: 'complete',
           requestId: response.headers.get('x-pdf-request-id'),
@@ -140,7 +144,7 @@ export default function ConsoleForm({ appABaseline }: { appABaseline: string }) 
       </section>
 
       {previewHtml && <section className="panel wide"><h2>Validated sandbox preview</h2><iframe className="preview" sandbox="" srcDoc={previewHtml} title="Validated submitted HTML preview" /></section>}
-      {result && <section className="panel wide"><h2>Result</h2><dl className="results">{Object.entries(result).filter(([key]) => key !== 'links').map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</dd></div>)}</dl>{result.links?.view && <p><a href={result.links.view} target="_blank" rel="noreferrer">Open stored PDF</a> · <a href={result.links.download} target="_blank" rel="noreferrer">Download stored PDF</a></p>}{previewUrl && <iframe className="pdf-preview" src={previewUrl} title="Generated PDF preview" />}</section>}
+      {result && <section className="panel wide"><h2>Result</h2><dl className="results">{Object.entries(result).filter(([key]) => key !== 'links').map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</dd></div>)}</dl>{result.links?.view && <p><a href={result.links.view} target="_blank" rel="noreferrer">Open stored PDF</a> · <a href={result.links.download} target="_blank" rel="noreferrer">Download stored PDF</a></p>}{directPdfUrl && <p><a href={directPdfUrl} download={directPdfFilename}>Download direct PDF</a></p>}{previewUrl && <iframe className="pdf-preview" src={previewUrl} title="Generated PDF preview" />}</section>}
     </div>
   );
 }

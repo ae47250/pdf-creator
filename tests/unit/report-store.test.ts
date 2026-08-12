@@ -24,7 +24,9 @@ const render = {
   pageCount: 1,
   pageDimensions: [{ widthPoints: 612, heightPoints: 792 }],
   sha256: 'a'.repeat(64),
-  markerCount: 0
+  markerCount: 0,
+  renderer: { source: 'installed' as const, product: 'Chrome', version: '149.0.0.0' },
+  layoutDiagnostics: null
 };
 
 describe('manifest-last report storage', () => {

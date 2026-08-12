@@ -24,7 +24,14 @@ export async function POST(request: Request): Promise<Response> {
       logResult({ event: 'pdf_complete', requestId, caller: caller.id, durationMs: result.body.durationMs, htmlBytes: result.body.htmlBytes, pdfBytes: result.body.pdfBytes, pageCount: result.body.pageCount, stored: true });
       return Response.json(result.body, { status: 200, headers: { 'Cache-Control': 'no-store', 'X-Request-Id': requestId } });
     }
-    logResult({ event: 'pdf_complete', requestId, caller: caller.id, durationMs: result.durationMs, htmlBytes: result.htmlBytes, pdfBytes: result.render.pdf.byteLength, pageCount: result.render.pageCount, stored: false });
+    logResult({
+      event: 'pdf_complete', requestId, caller: caller.id, durationMs: result.durationMs,
+      htmlBytes: result.htmlBytes, pdfBytes: result.render.pdf.byteLength, pageCount: result.render.pageCount,
+      stored: false, rendererSource: result.render.renderer.source,
+      rendererProduct: result.render.renderer.product, rendererVersion: result.render.renderer.version,
+      layoutObservationCount: result.render.layoutDiagnostics?.observationCount ?? 0,
+      layoutObservationKinds: result.render.layoutDiagnostics?.observations.map((item) => item.kind).join(',') ?? ''
+    });
     return new Response(Buffer.from(result.render.pdf), {
       status: 200,
       headers: directHeaders(requestId, caller.id, creationRequest.filename, result)

@@ -35,7 +35,12 @@
         }
       }
     },
-    "expectedPageCount": { "type": "integer", "minimum": 1, "maximum": 25 },
+    "expectedPageCount": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 25,
+      "description": "Optional exact page-count assertion. Use for fixed-page or deliberately paginated documents; natural-flow callers normally omit it unless exact count is an application requirement."
+    },
     "metadata": {
       "type": "object",
       "additionalProperties": false,

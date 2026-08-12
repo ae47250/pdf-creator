@@ -68,7 +68,9 @@ describe('PDF admission order', () => {
       pageCount: 1,
       pageDimensions: [{ widthPoints: 612, heightPoints: 792 }],
       sha256: 'a'.repeat(64),
-      markerCount: 0
+      markerCount: 0,
+      renderer: { source: 'installed', product: 'Chrome', version: '149.0.0.0' },
+      layoutDiagnostics: { mode: 'observe-only', printableWidthPixels: 816, observationCount: 0, observations: [] }
     });
 
     const result = await createPdf(

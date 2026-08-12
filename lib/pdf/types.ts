@@ -40,6 +40,32 @@ export interface PageDimension {
   heightPoints: number;
 }
 
+export interface RendererIdentity {
+  source: 'installed' | 'bundled';
+  product: string;
+  version: string;
+}
+
+export type FlowLayoutObservationKind =
+  | 'document_overflow'
+  | 'table_overflow'
+  | 'image_overflow'
+  | 'unbreakable_content'
+  | 'positioned_content';
+
+export interface FlowLayoutObservation {
+  kind: FlowLayoutObservationKind;
+  tagName: string;
+  excessPixels: number;
+}
+
+export interface FlowLayoutDiagnostics {
+  mode: 'observe-only';
+  printableWidthPixels: number;
+  observationCount: number;
+  observations: FlowLayoutObservation[];
+}
+
 export interface RenderResult {
   pdf: Uint8Array;
   renderedHtml: string;
@@ -47,4 +73,6 @@ export interface RenderResult {
   pageDimensions: PageDimension[];
   sha256: string;
   markerCount: number;
+  renderer: RendererIdentity;
+  layoutDiagnostics: FlowLayoutDiagnostics | null;
 }

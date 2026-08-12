@@ -62,6 +62,11 @@ const longReport = document(
   `<h1>Long Flowing Report</h1>${Array.from({ length: 70 }, (_, index) => `<section><h2>Section ${index + 1}</h2><p>Stable paragraph ${index + 1} tests flowing pagination, heading placement, widows, and orphans. The content is fictional and deliberately repetitive for regression testing.</p></section>`).join('')}`
 );
 
+const flowingTwentyPageReport = document(
+  'Extended Natural-Flow Report',
+  `<h1>Extended Natural-Flow Report</h1>${Array.from({ length: 180 }, (_, index) => `<section><h2>Natural section ${index + 1}</h2><p>Fictional natural-flow paragraph ${index + 1} verifies long browser pagination without fixed markers or an exact expected-page assertion. Stable wrapping and heading placement remain caller-controlled.</p></section>`).join('')}`
+);
+
 const tableReport = document(
   'Table Pagination Report',
   `<h1>Table Pagination Report</h1><p>This table intentionally crosses page boundaries.</p><table><thead><tr><th>Observation</th><th>Fictional value</th><th>Comment</th></tr></thead><tbody>${Array.from({ length: 85 }, (_, index) => `<tr><td>Row ${index + 1}</td><td>${(100 + index / 10).toFixed(1)}</td><td>Stable table regression entry</td></tr>`).join('')}</tbody></table>`,
@@ -86,7 +91,7 @@ const pagedReport = fixedPages('Headers and Deliberate Breaks', [
 
 const unicodeEconomics = document(
   'Unicode and Economics Notation',
-  '<h1>Unicode and Economics Notation</h1><p>English, Español, Français, Íslenska, Deutsch, Português, 日本語, Ελληνικά.</p><p>Accents: á é í ó ú ý ñ ç ø å æ ß.</p><p>Economics: GDPₜ = Cₜ + Iₜ + Gₜ + NXₜ; π = ΔP/P; β, γ, λ, μ, σ; x² + y² ≥ 0; ∑ᵢ qᵢpᵢ.</p>'
+  '<h1>Unicode and Economics Notation</h1><p>English, Español, Français, Íslenska, Deutsch, Português, Русский, Ελληνικά.</p><p>Accents: á é í ó ú ý ñ ç ø å æ ß.</p><p>Economics: GDPₜ = Cₜ + Iₜ + Gₜ + NXₜ; π = ΔP/P; β, γ, λ, μ, σ; x² + y² ≥ 0; ∑ᵢ qᵢpᵢ.</p>'
 );
 
 function appFixture(name: string, color: string, accent: string): string {
@@ -101,10 +106,11 @@ export const successFixtures: Record<string, SuccessFixture> = {
   minimal: { id: 'minimal', title: 'Minimal one-page document', html: document('Minimal Report', '<h1>Minimal Report</h1><p>Minimal fixture sentinel.</p>'), filename: 'Minimal_Report.pdf', expectedText: ['Minimal Report', 'Minimal fixture sentinel'], pageRange: [1, 1], visual: true },
   academic: { id: 'academic', title: 'Realistic multi-page academic report', html: academic, filename: 'Academic_Report.pdf', expectedText: ['Public Finance and Local Investment', 'Page 3 of 3'], pageRange: [3, 3], visual: true },
   long: { id: 'long', title: 'Long report with headings and paragraphs', html: longReport, filename: 'Long_Report.pdf', expectedText: ['Long Flowing Report', 'Section 70'], pageRange: [5, 15], visual: false },
+  flowing20: { id: 'flowing20', title: 'Approximately twenty-page natural-flow report', html: flowingTwentyPageReport, filename: 'Extended_Natural_Flow_Report.pdf', expectedText: ['Extended Natural-Flow Report', 'Natural section 180'], pageRange: [17, 23], visual: false },
   tables: { id: 'tables', title: 'Table-heavy report crossing pages', html: tableReport, filename: 'Table_Report.pdf', expectedText: ['Table Pagination Report', 'Row 85'], pageRange: [2, 8], visual: true, page: flowingTablePage },
   media: { id: 'media', title: 'Lists, hyperlinks, embedded image, and chart', html: mediaReport, filename: 'Media_Report.pdf', expectedText: ['Embedded Media and Chart Report', 'Example chart source'], pageRange: [1, 2], visual: true },
   paged: { id: 'paged', title: 'Headers, footers, page numbers, margins, and breaks', html: pagedReport, filename: 'Paged_Report.pdf', expectedText: ['Deliberate Page One', 'Page 2 of 2'], pageRange: [2, 2], visual: false },
-  unicode: { id: 'unicode', title: 'Unicode and international text', html: unicodeEconomics, filename: 'Unicode_Report.pdf', expectedText: ['Unicode and Economics Notation', '日本語'], pageRange: [1, 1], visual: true },
+  unicode: { id: 'unicode', title: 'Unicode and international text', html: unicodeEconomics, filename: 'Unicode_Report.pdf', expectedText: ['Unicode and Economics Notation', 'Русский'], pageRange: [1, 1], visual: true },
   accented: { id: 'accented', title: 'Accented characters', html: document('Accented Characters', '<h1>Accented Characters</h1><p>á é í ó ú ý ñ ç ø å æ ß</p>'), filename: 'Accented_Report.pdf', expectedText: ['Accented Characters', 'áéíóú'], pageRange: [1, 1], visual: false },
   economics: { id: 'economics', title: 'Mathematical and economics notation', html: document('Economics Notation', '<h1>Economics Notation</h1><p>GDPₜ = Cₜ + Iₜ + Gₜ + NXₜ; π, β, γ, λ, μ, σ; x² ≥ 0.</p>'), filename: 'Economics_Notation.pdf', expectedText: ['Economics Notation', 'GDP'], pageRange: [1, 1], visual: false },
   short: { id: 'short', title: 'Very short document', html: document('Short', '<p>OK</p>'), filename: 'Short.pdf', expectedText: ['OK'], pageRange: [1, 1], visual: false },
@@ -137,7 +143,7 @@ export const malformedCssScenario = {
 };
 
 export const requiredScenarioIds = [
-  'minimal', 'academic', 'long', 'tables', 'media', 'paged', 'unicode', 'accented', 'economics', 'short', 'large',
+  'minimal', 'academic', 'long', 'flowing20', 'tables', 'media', 'paged', 'unicode', 'accented', 'economics', 'short', 'large',
   malformedCssScenario.id, ...invalidScenarios.map((scenario) => scenario.id), 'appBlue', 'appGold'
 ];
 

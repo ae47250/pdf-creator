@@ -4,7 +4,8 @@ const browser = vi.hoisted(() => ({
   close: vi.fn(async () => undefined),
   connected: true,
   newPage: vi.fn(),
-  process: vi.fn(() => undefined)
+  process: vi.fn(() => undefined),
+  version: vi.fn(async () => 'HeadlessChrome/149.0.0.0')
 }));
 const launch = vi.hoisted(() => vi.fn());
 

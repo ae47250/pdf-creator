@@ -6,8 +6,20 @@ import puppeteer, { type Browser, type Page } from 'puppeteer-core';
 import { PdfServiceError } from './errors';
 import { validateAndNormalizeHtml } from './html-safety';
 import { LIMITS } from './limits';
-import { countPdfPages, finalizeAndValidatePdf, mergePdfPages } from './pdf-quality';
-import type { PdfCreationRequest, RenderResult } from './types';
+import {
+  countPdfPages,
+  finalizeAndValidatePdf,
+  mergePdfPages,
+  type InternalPdfLink
+} from './pdf-quality';
+import type {
+  FlowLayoutDiagnostics,
+  FlowLayoutObservation,
+  PageSettings,
+  PdfCreationRequest,
+  RendererIdentity,
+  RenderResult
+} from './types';
 
 const windowsBrowserPaths = [
   'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
@@ -29,19 +41,23 @@ export async function renderPdf(request: PdfCreationRequest, caller: string): Pr
   let originalError: unknown;
 
   try {
-    browser = await launchBrowserWithinTimeout();
+    const launched = await launchBrowserWithinTimeout();
+    browser = launched.browser;
+    const renderer = rendererIdentityFromVersion(await browser.version(), launched.local);
     page = await browser.newPage();
     await configurePage(page);
     const remainingRenderMs = Math.max(1, LIMITS.renderMs - (Date.now() - renderStarted));
-    const raw = await withTimeout(
-      safe.markerCount === 0
+    const renderOperation: Promise<RenderedOutput> = safe.markerCount === 0
         ? renderWholeDocument(page, safe.html, request)
-        : renderFixedPages(page, safe.html, safe.markerCount, request),
+        : renderFixedPages(page, safe.html, safe.markerCount, request);
+    const rendered = await withTimeout(
+      renderOperation,
       remainingRenderMs,
       'render_timeout',
       'PDF rendering exceeded the time limit.'
     );
-    return await finalizeAndValidatePdf(raw, request, caller, safe.markerCount, safe.html);
+    const validated = await finalizeAndValidatePdf(rendered.pdf, request, caller, safe.markerCount, safe.html);
+    return { ...validated, renderer, layoutDiagnostics: rendered.layoutDiagnostics };
   } catch (error) {
     originalError = error;
     throw error;
@@ -50,19 +66,29 @@ export async function renderPdf(request: PdfCreationRequest, caller: string): Pr
   }
 }
 
-async function launchBrowserWithinTimeout(): Promise<Browser> {
+interface LaunchedBrowser {
+  browser: Browser;
+  local: boolean;
+}
+
+interface RenderedOutput {
+  pdf: Uint8Array;
+  layoutDiagnostics: FlowLayoutDiagnostics | null;
+}
+
+async function launchBrowserWithinTimeout(): Promise<LaunchedBrowser> {
   const launch = launchBrowser();
   try {
     return await withTimeout(launch, LIMITS.browserStartMs, 'render_timeout', 'The browser did not start in time.');
   } catch (error) {
-    void launch.then((lateBrowser) => closeSafely(undefined, lateBrowser, error)).catch(() => undefined);
+    void launch.then((late) => closeSafely(undefined, late.browser, error)).catch(() => undefined);
     throw error;
   }
 }
 
-async function launchBrowser(): Promise<Browser> {
+async function launchBrowser(): Promise<LaunchedBrowser> {
   const executable = await resolveBrowserExecutable();
-  return puppeteer.launch({
+  const browser = await puppeteer.launch({
     args: executable.local
       ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
       : [...chromium.args, '--disable-dev-shm-usage'],
@@ -70,6 +96,17 @@ async function launchBrowser(): Promise<Browser> {
     executablePath: executable.path,
     headless: true
   });
+  return { browser, local: executable.local };
+}
+
+export function rendererIdentityFromVersion(browserVersion: string, local: boolean): RendererIdentity {
+  const normalized = browserVersion.trim();
+  const separator = normalized.indexOf('/');
+  return {
+    source: local ? 'installed' : 'bundled',
+    product: separator > 0 ? normalized.slice(0, separator) : normalized || 'Unknown',
+    version: separator > 0 ? normalized.slice(separator + 1) : 'unknown'
+  };
 }
 
 export async function resolveBrowserExecutable({
@@ -150,19 +187,54 @@ async function loadAndWait(page: Page, html: string): Promise<void> {
   }
 }
 
-async function renderWholeDocument(page: Page, html: string, request: PdfCreationRequest): Promise<Uint8Array> {
+async function renderWholeDocument(
+  page: Page,
+  html: string,
+  request: PdfCreationRequest
+): Promise<{ pdf: Uint8Array; layoutDiagnostics: FlowLayoutDiagnostics }> {
   await loadAndWait(page, html);
-  return page.pdf(pdfOptions(request));
+  const layoutDiagnostics = await observeFlowLayout(page, request.page);
+  return { pdf: await page.pdf(pdfOptions(request)), layoutDiagnostics };
 }
 
-async function renderFixedPages(page: Page, html: string, markerCount: number, request: PdfCreationRequest): Promise<Uint8Array> {
+async function renderFixedPages(
+  page: Page,
+  html: string,
+  markerCount: number,
+  request: PdfCreationRequest
+): Promise<{ pdf: Uint8Array; layoutDiagnostics: null }> {
   const pages: Uint8Array[] = [];
+  const internalLinks: InternalPdfLink[] = [];
   for (let index = 0; index < markerCount; index += 1) {
     await loadAndWait(page, html);
     const geometry = await page.evaluate((selectedIndex) => {
       const markers = Array.from(document.querySelectorAll<HTMLElement>('[data-pdf-page]'));
       const selected = markers[selectedIndex];
-      if (!selected) return { missing: true, overflow: false };
+      if (!selected) return { missing: true, overflow: false, internalLinks: [] };
+      const selectedBeforeIsolation = selected.getBoundingClientRect();
+      const internalLinks = Array.from(selected.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')).flatMap((anchor) => {
+        const href = anchor.getAttribute('href');
+        if (!href || href.length < 2) return [];
+        let targetId: string;
+        try { targetId = decodeURIComponent(href.slice(1)); } catch { return []; }
+        const target = document.getElementById(targetId);
+        const targetMarker = target?.closest<HTMLElement>('[data-pdf-page]');
+        if (!target || !targetMarker) return [];
+        const targetPageIndex = markers.indexOf(targetMarker);
+        if (targetPageIndex < 0) return [];
+        const anchorBox = anchor.getBoundingClientRect();
+        const targetMarkerBox = targetMarker.getBoundingClientRect();
+        const targetBox = target.getBoundingClientRect();
+        return [{
+          sourcePageIndex: selectedIndex,
+          targetPageIndex,
+          leftPixels: anchorBox.left - selectedBeforeIsolation.left,
+          topPixels: anchorBox.top - selectedBeforeIsolation.top,
+          widthPixels: anchorBox.width,
+          heightPixels: anchorBox.height,
+          targetTopPixels: targetBox.top - targetMarkerBox.top
+        }];
+      });
       for (const candidate of Array.from(document.body.querySelectorAll<HTMLElement>('*')).reverse()) {
         if (candidate === selected || candidate.contains(selected) || selected.contains(candidate)) continue;
         candidate.remove();
@@ -184,7 +256,7 @@ async function renderFixedPages(page: Page, html: string, markerCount: number, r
         bottom = Math.max(bottom, rect.bottom);
       }
       const overflow = left < box.left - 1 || top < box.top - 1 || right > box.right + 1 || bottom > box.bottom + 1 || selected.scrollWidth > selected.clientWidth + 1 || selected.scrollHeight > selected.clientHeight + 1;
-      return { missing: false, overflow };
+      return { missing: false, overflow, internalLinks };
     }, index);
     if (geometry.missing) throw new PdfServiceError('pdf_invalid', 500, 'A fixed-page marker disappeared during rendering.');
     if (geometry.overflow) throw new PdfServiceError('fixed_page_overflow', 422, `Fixed page ${index + 1} contains overflowing content.`);
@@ -192,9 +264,75 @@ async function renderFixedPages(page: Page, html: string, markerCount: number, r
     if (await countPdfPages(bytes) !== 1) {
       throw new PdfServiceError('fixed_page_overflow', 422, `Fixed page ${index + 1} did not render as exactly one PDF page.`);
     }
+    internalLinks.push(...geometry.internalLinks);
     pages.push(bytes);
   }
-  return mergePdfPages(pages);
+  return { pdf: await mergePdfPages(pages, internalLinks), layoutDiagnostics: null };
+}
+
+async function observeFlowLayout(page: Page, settings: PageSettings): Promise<FlowLayoutDiagnostics> {
+  const pageWidthInches = settings.format === 'Letter' || settings.format === 'Legal' ? 8.5 : 8.267;
+  const physicalWidthInches = settings.orientation === 'portrait'
+    ? pageWidthInches
+    : settings.format === 'Letter'
+      ? 11
+      : settings.format === 'Legal'
+        ? 14
+        : 11.69;
+  const printableWidthPixels = Math.max(
+    1,
+    Math.round((physicalWidthInches - settings.marginsInches.left - settings.marginsInches.right) * 96)
+  );
+  const originalViewport = page.viewport()!;
+
+  await page.setViewport({ ...originalViewport, width: printableWidthPixels });
+  try {
+    const observations = await page.evaluate((availableWidth) => {
+      const findings: FlowLayoutObservation[] = [];
+      const add = (kind: FlowLayoutObservation['kind'], element: Element, excess: number) => {
+        if (excess <= 1 || findings.length >= 20) return;
+        const tagName = element === document.documentElement
+          ? 'html'
+          : element === document.body
+            ? 'body'
+            : element.tagName.toLowerCase();
+        if (findings.some((finding) => finding.kind === kind && finding.tagName === tagName)) return;
+        findings.push({ kind, tagName, excessPixels: Math.round(excess * 100) / 100 });
+      };
+      const rootOverflow = Math.max(
+        document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        document.body.scrollWidth - document.body.clientWidth
+      );
+      add('document_overflow', document.documentElement, rootOverflow);
+
+      for (const element of Array.from(document.body.querySelectorAll<HTMLElement>('*'))) {
+        if (findings.length >= 20) break;
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        const horizontalExcess = Math.max(0, rect.right - availableWidth, -rect.left, rect.width - availableWidth);
+        const ownOverflow = Math.max(0, element.scrollWidth - element.clientWidth);
+        const tag = element.tagName.toLowerCase();
+
+        if (tag === 'table') add('table_overflow', element, Math.max(horizontalExcess, ownOverflow));
+        if (tag === 'img' || tag === 'svg') add('image_overflow', element, Math.max(horizontalExcess, ownOverflow));
+        if ((style.whiteSpace === 'nowrap' || ownOverflow > 1) && element.textContent?.trim()) {
+          add('unbreakable_content', element, Math.max(horizontalExcess, ownOverflow));
+        }
+        if ((style.position === 'absolute' || style.position === 'fixed' || style.transform !== 'none') && horizontalExcess > 1) {
+          add('positioned_content', element, horizontalExcess);
+        }
+      }
+      return findings;
+    }, printableWidthPixels);
+    return {
+      mode: 'observe-only',
+      printableWidthPixels,
+      observationCount: observations.length,
+      observations
+    };
+  } finally {
+    await page.setViewport(originalViewport);
+  }
 }
 
 function pdfOptions(request: PdfCreationRequest) {
