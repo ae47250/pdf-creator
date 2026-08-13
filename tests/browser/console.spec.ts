@@ -12,7 +12,7 @@ test('development console renders and creates a validated direct PDF', async ({ 
   await page.getByLabel('Saved fixture').selectOption('appA');
   await expect(page.getByLabel(/HTML \(/)).toContainText('data:image/svg+xml;base64');
   await page.getByLabel('Saved fixture').selectOption('fixed');
-  await expect(page.getByLabel('Expected pages')).toHaveValue('3');
+  await expect(page.getByLabel('Exact page count (optional)')).toHaveValue('3');
   await page.getByLabel('Filename').fill('Console_Named_Report.pdf');
   await page.getByRole('button', { name: 'Generate validated PDF' }).click();
   await expect(page.getByText('PDF created and validated.')).toBeVisible({ timeout: 45_000 });
@@ -24,4 +24,40 @@ test('development console renders and creates a validated direct PDF', async ({ 
   await page.getByRole('link', { name: 'Download direct PDF' }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toBe('Console_Named_Report.pdf');
+});
+
+test('exact page count is optional and omitted when blank', async ({ page }) => {
+  let submittedPayload: Record<string, unknown> | undefined;
+  await page.route('**/api/console/pdfs', async (route) => {
+    submittedPayload = route.request().postDataJSON() as Record<string, unknown>;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'complete' })
+    });
+  });
+
+  await page.goto('/');
+  const exactPageCount = page.getByLabel('Exact page count (optional)');
+  await expect(exactPageCount).toHaveValue('');
+  await expect(page.getByText('Leave blank for automatic pagination. If entered, the generated PDF must match this number exactly.')).toBeVisible();
+
+  for (const fixture of ['onePage', 'flowing', 'appA']) {
+    await page.getByLabel('Saved fixture').selectOption(fixture);
+    await expect(exactPageCount).toHaveValue('');
+  }
+
+  await page.getByLabel('Saved fixture').selectOption('fixed');
+  await expect(exactPageCount).toHaveValue('3');
+  await page.getByLabel('Upload .html').setInputFiles({
+    name: 'uploaded.html',
+    mimeType: 'text/html',
+    buffer: Buffer.from('<!doctype html><html><body><p>Uploaded test HTML.</p></body></html>')
+  });
+  await expect(exactPageCount).toHaveValue('');
+
+  await page.getByRole('button', { name: 'Generate validated PDF' }).click();
+  await expect(page.getByText('PDF created and validated.')).toBeVisible();
+  expect(submittedPayload).toBeDefined();
+  expect(submittedPayload).not.toHaveProperty('expectedPageCount');
 });
