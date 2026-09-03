@@ -158,7 +158,11 @@ All canaries are test-bucket-only. Observe retention-1 on day 3, retention-7 on 
 
 ## Continuous integration
 
-This repository currently has no continuous-integration workflow. No Preview, storage, or visual test runs automatically. If CI is added later, use `test:fast` by default and run local Chromium tests only on a runner with a pinned browser. Keep both Preview commands manual and outside scheduled or pull-request workflows.
+The GitHub Actions workflow in `.github/workflows/tests.yml` runs type checking,
+linting, and `test:fast` for pull requests and pushes to `main`. Preview,
+storage, browser, and visual tests do not run automatically. Run local Chromium
+tests only on a runner with a pinned browser, and keep both Preview commands
+manual and outside scheduled or pull-request workflows.
 
 ## Known limitations
 
