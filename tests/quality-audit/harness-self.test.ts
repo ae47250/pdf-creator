@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PDFDocument, StandardFonts } from 'pdf-lib';
+import { PDFDocument, rgb } from 'pdf-lib';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   aggregateMetrics,
@@ -45,8 +45,8 @@ function manifestWithLocalCases(manifest: LoadedManifest, caseIds: string[]) {
 async function deliberatelyIncorrectPdf() {
   const document = await PDFDocument.create();
   const page = document.addPage([500, 500]);
-  const font = await document.embedFont(StandardFonts.Helvetica);
-  page.drawText('This deliberately omits all required fixture text.', { x: 24, y: 460, size: 12, font });
+  // Keep the fixture visibly nonblank without relying on host font substitution.
+  page.drawRectangle({ x: 24, y: 440, width: 260, height: 24, color: rgb(0.2, 0.2, 0.2) });
   document.setTitle('Incorrect title');
   document.setAuthor('Incorrect author');
   document.setSubject('Incorrect subject');
