@@ -49,6 +49,17 @@ describe.sequential('real local API regression path', () => {
     expect(response.headers.get('x-pdf-request-id')).toMatch(/^[0-9a-f-]{36}$/);
   }, 45_000);
 
+  it('reports all prohibited elements with static print guidance through the real API path', async () => {
+    const html = '<!doctype html><html><head></head><body><button onclick="activate()">Report</button><form><input></form><script>activate()</script><iframe></iframe></body></html>';
+    const response = await POST(request({ ...payloadFor(successFixtures.minimal), html }));
+    const body = await response.json();
+    expect(response.status).toBe(400);
+    expect(body.error.code).toBe('unsafe_html');
+    expect(body.error.message).toBe(
+      'The document contains prohibited elements: button, form, iframe, input, script. Remove prohibited elements and provide static print HTML.'
+    );
+  });
+
   it.each(invalidScenarios)('handles $id with a predictable controlled response', async (scenario) => {
     const response = await POST(request(scenario.payload, scenario.authorization === undefined ? `Bearer ${TEST_BEARER_KEY}` : scenario.authorization));
     const body = await response.json();

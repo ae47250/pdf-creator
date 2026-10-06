@@ -39,6 +39,10 @@ export function validateAndNormalizeHtml(html: string, page: PageSettings): Safe
   const head = findElement(document, 'head');
   const body = findElement(document, 'body');
   if (!htmlElement || !head || !body) unsafe('The document must contain html, head, and body elements.');
+  const prohibitedElements = collectProhibitedElements(document);
+  if (prohibitedElements.length) {
+    unsafe(`The document contains prohibited elements: ${prohibitedElements.join(', ')}. Remove prohibited elements and provide static print HTML.`);
+  }
 
   let domElementCount = 0;
   let imageCount = 0;
@@ -110,6 +114,21 @@ export function validateAndNormalizeHtml(html: string, page: PageSettings): Safe
   head.childNodes.push(makeElement('style', [], [{ nodeName: '#text', value: finalPageRule }]));
 
   return { html: serialize(document as unknown as DefaultTreeAdapterMap['parentNode']), markerCount, imageCount, cssRuleCount, domElementCount };
+}
+
+function collectProhibitedElements(root: HtmlNode): string[] {
+  const counts = new Map<string, number>();
+  const pending = [root];
+  while (pending.length) {
+    const node = pending.pop()!;
+    const tag = node.tagName?.toLowerCase();
+    if (tag && FORBIDDEN_ELEMENTS.has(tag)) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    const children = node.childNodes ?? [];
+    for (let index = children.length - 1; index >= 0; index -= 1) pending.push(children[index]);
+  }
+  return [...counts]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([tag, count]) => count > 1 ? `${tag} (${count})` : tag);
 }
 
 function validateMeta(attributes: Attribute[]): void {
