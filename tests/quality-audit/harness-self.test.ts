@@ -177,6 +177,11 @@ describe('PDF quality audit harness self-tests', () => {
     expect(findingCodes).toMatch(/dimension|geometry/i);
     expect(findingCodes).toMatch(/text/i);
     expect(findingCodes).toMatch(/metadata/i);
+    const rasterMismatch = execution.findings.find((finding) => finding.code === 'visual-reference-mismatch');
+    expect(rasterMismatch).toMatchObject({ severity: 'high', affectsCorrectness: true });
+    expect(rasterMismatch?.message).toContain('remains a high-severity correctness finding');
+    expect(execution.evidence.visualCorrectness).toMatchObject({ exactMatch: false });
+    expect(execution.evidence.visualCorrectness).not.toHaveProperty('humanVisualReview');
   }, 15_000);
 
   it('does not let one failed fixture suppress the next authorized fixture', async () => {
