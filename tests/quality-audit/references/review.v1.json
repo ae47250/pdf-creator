@@ -44,6 +44,24 @@
       ]
     }
   ],
+  "humanVisualReviews": [
+    {
+      "referenceId": "A-BASIC-01-p1",
+      "candidateSha256": "8540cf1ba3124ab8980810aa8035e980aba88ab2f53962b328b983be21dd55dd",
+      "reviewedAt": "2026-10-06",
+      "source": "user-supplied",
+      "disposition": "no-visible-defect",
+      "reviewNotes": "The user compared this exact candidate with the approved reference and reported no visible defect. Codex did not independently inspect this candidate."
+    },
+    {
+      "referenceId": "A-FULL-PATHWAY-01-p1",
+      "candidateSha256": "56feb5b49eb7cd1de071682cc8727f0ffb048124eebf0017842ab5835cacd541",
+      "reviewedAt": "2026-10-06",
+      "source": "user-supplied",
+      "disposition": "no-visible-defect",
+      "reviewNotes": "The user compared this exact candidate with the approved reference and reported no visible layout or content defect. Codex did not independently inspect this candidate."
+    }
+  ],
   "updatePolicy": {
     "automaticAcceptance": false,
     "requiredSteps": [

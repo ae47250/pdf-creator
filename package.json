@@ -34,7 +34,7 @@
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "css-tree": "3.2.1",
-    "next": "16.2.11",
+    "next": "16.4.0",
     "parse5": "8.0.1",
     "pdf-lib": "1.17.1",
     "puppeteer-core": "25.1.0",
@@ -54,7 +54,7 @@
   },
   "overrides": {
     "postcss": "8.5.25",
-    "sharp": "0.35.3"
+    "sharp": "0.35.5"
   },
   "engines": {
     "node": "24.x"

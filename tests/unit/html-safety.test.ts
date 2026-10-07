@@ -10,6 +10,15 @@ const page = {
 const document = (body: string, css = '') => `<!doctype html><html><head><style>${css}</style></head><body>${body}</body></html>`;
 
 describe('HTML safety', () => {
+  it('reports every prohibited element together and directs callers to static print HTML', () => {
+    const html = document(
+      '<button class="tab" onclick="run()">Report</button><button class="chip">C34</button><form><input><select><option>A</option></select><textarea></textarea></form><script>run()</script><iframe></iframe>'
+    );
+    expect(() => validateAndNormalizeHtml(html, page)).toThrowError(
+      'The document contains prohibited elements: button (2), form, iframe, input, script, select, textarea. Remove prohibited elements and provide static print HTML.'
+    );
+  });
+
   it('accepts static HTML, links, and non-nested markers', () => {
     const safe = validateAndNormalizeHtml(document('<section data-pdf-page><a href="https://example.com">Citation</a></section>'), page);
     expect(safe.markerCount).toBe(1);

@@ -5,7 +5,9 @@ test('development console renders and creates a validated direct PDF', async ({ 
   await expect(page.getByRole('img', { name: 'Urveska' })).toBeVisible();
   await expect(page.getByRole('img', { name: 'Mr. Lombardi playing drums' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'PDF Creator' })).toBeVisible();
-  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(68, 99, 119)');
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(128, 0, 0)');
+  await expect(page.locator('.intro')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(page.locator('.intro')).toHaveCSS('color', 'rgb(21, 33, 43)');
   await expect(page.getByText('internal testing console, not a general public file converter')).toBeVisible();
   await expect(page.locator('body')).not.toContainText('BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB');
 

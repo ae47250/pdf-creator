@@ -213,12 +213,15 @@
       "expected": {
         "responseKind": "pdf", "httpStatus": 200, "contentType": "application/pdf",
         "pageCount": { "minimum": 1, "maximum": 1 }, "pageDimensions": [{ "widthPoints": 612, "heightPoints": 792 }],
-        "requiredText": ["Español", "Αθήνα", "Москва", "GDPₜ", "€", "£", "¥"], "forbiddenText": ["�"],
+        "requiredText": ["Español", "Αθήνα", "Москва", "GDP", "ₜ", "€", "£", "¥"], "forbiddenText": ["�"],
         "metadata": { "title": "Synthetic PDF audit A-TEXT-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-TEXT-01", "keywords": ["synthetic", "quality-audit", "a-text-01"] },
         "geometricExpectations": {
           "allPagesNonblank": true,
-          "perPageRequiredText": [{ "pageNumber": 1, "text": ["Español", "Αθήνα", "Москва", "GDPₜ", "€ £ ¥"] }],
-          "informationalNotes": ["This PR A case proves searchable extracted text and one-page placement; broader reviewed glyph/font coverage is deferred to PR B."]
+          "perPageRequiredText": [
+            { "pageNumber": 1, "text": ["Español", "Αθήνα", "Москва", "€ £ ¥"] },
+            { "pageNumber": 1, "matchMode": "character-count", "text": ["GDPₜ = Cₜ + Iₜ + Gₜ + NXₜ; π, β, λ, σ; x² + y² ≥ 0; ∑ qᵢpᵢ; € £ ¥."] }
+          ],
+          "informationalNotes": ["Poppler may extract subscript glyphs separately from their base letters. The character-count check preserves every non-whitespace code point and its expected count on page 1 without asserting extraction order; user-supplied visual review is separate evidence."]
         }
       },
       "previewEligible": false,

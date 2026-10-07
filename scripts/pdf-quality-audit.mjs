@@ -665,9 +665,11 @@ export function generateMarkdownReport(result) {
     `- Quality score: ${formatRateLabel(result.metrics.qualityScore)} (descriptive only).`,
     `- Fixture/input-scope execution coverage: ${formatRateLabel(result.metrics.capabilityCoverage)}. This shows which compact manifest inputs ran, not whether their evidence passed.`,
     `- Evidence availability: ${formatRateLabel(result.metrics.evidenceCoverage)}; core required evidence ${formatRateLabel(result.metrics.evidenceCoverage.coreRequired)}, optional tool evidence ${formatRateLabel(result.metrics.evidenceCoverage.optionalToolEvidence)}. Missing evidence lowers this descriptive coverage measurement without stopping the audit.`,
-    '- Exact assertions cover status, PDF signature/parseability, page count, metadata, and required text.',
+    '- Structural validity, extracted-text and page-placement checks, exact raster comparison, and output-to-output repeatability are separate evidence.',
     `- Page-dimension comparisons use a provisional ±${PROVISIONAL_DIMENSION_TOLERANCE_POINTS}-point PR A tolerance. It labels findings only.`,
-    '- Visual references are valid correctness evidence only when their committed review ledger says `approved`; otherwise the visual lane is unavailable. Raster repeatability is always labeled separately from correctness.',
+    '- An exact raster mismatch remains recorded. It is nonblocking only when that exact candidate raster hash has a user-supplied no-visible-defect review; otherwise it remains a correctness finding. Approved reference images are not replaced by the audit.',
+    '- Human visual reviews are labeled as user-supplied evidence and are distinct from automated raster comparison. This local audit does not claim independent Codex visual review.',
+    '- Raster repeatability compares outputs with each other; it does not establish visual correctness.',
     '- Latency is informational. PR A defines no performance, quality, or percentage release threshold.',
     '',
     '## Boundaries',
@@ -1152,7 +1154,7 @@ function evaluateTextGeometry(result, expectations, pages, fullText) {
   for (const placement of expectations.perPageRequiredText ?? []) {
     const pageText = pages[placement.pageNumber - 1]?.text ?? '';
     for (const expectedText of placement.text) {
-      if (!pageText.includes(expectedText)) {
+      if (!textMatchesExpectation(pageText, expectedText, placement.matchMode)) {
         result.findings.push(finding(
           'required-page-placement-mismatch',
           'high',
@@ -1193,6 +1195,24 @@ function evaluateTextGeometry(result, expectations, pages, fullText) {
     }
     priorIndex = currentIndex;
   }
+}
+
+function textMatchesExpectation(actualText, expectedText, matchMode = 'substring') {
+  if (matchMode !== 'character-count') return actualText.includes(expectedText);
+
+  const countsByCodePoint = (text) => {
+    const counts = new Map();
+    for (const codePoint of text) {
+      if (/\s/u.test(codePoint)) continue;
+      counts.set(codePoint, (counts.get(codePoint) ?? 0) + 1);
+    }
+    return counts;
+  };
+
+  const actualCounts = countsByCodePoint(actualText);
+  return [...countsByCodePoint(expectedText)].every(([codePoint, count]) =>
+    (actualCounts.get(codePoint) ?? 0) >= count
+  );
 }
 
 function evaluateMetadata(result, expected) {
@@ -1317,6 +1337,12 @@ async function evaluateVisualReference({ result, referenceId, fixtureSha256, pdf
     return;
   }
   const exactMatch = candidateSha256 === actualReferenceSha256;
+  const humanVisualReview = ledger.humanVisualReviews?.find((review) =>
+    review.referenceId === referenceId
+    && review.candidateSha256 === candidateSha256
+    && review.source === 'user-supplied'
+    && review.disposition === 'no-visible-defect'
+  );
   result.evidence.visualCorrectness = {
     referenceId,
     candidateSha256,
@@ -1326,13 +1352,25 @@ async function evaluateVisualReference({ result, referenceId, fixtureSha256, pdf
     exactMatch,
     distinctFromRepeatability: true
   };
+  if (humanVisualReview) {
+    result.evidence.visualCorrectness.humanVisualReview = {
+      source: humanVisualReview.source,
+      disposition: humanVisualReview.disposition,
+      reviewedAt: humanVisualReview.reviewedAt,
+      candidateSha256: humanVisualReview.candidateSha256,
+      reviewNotes: humanVisualReview.reviewNotes
+    };
+  }
   if (!exactMatch) {
+    const reviewedNoVisibleDefect = Boolean(humanVisualReview);
     result.findings.push(finding(
       'visual-reference-mismatch',
-      'high',
+      reviewedNoVisibleDefect ? 'informational' : 'high',
       'visual-correctness',
-      `Rendered page does not exactly match approved compact reference ${referenceId}. This provisional PR A label is nonblocking.`,
-      true
+      reviewedNoVisibleDefect
+        ? `Raster differs from approved compact reference ${referenceId}; the exact candidate hash has a user-supplied no-visible-defect review. The reference image is unchanged.`
+        : `Rendered page does not exactly match approved compact reference ${referenceId}; no matching human visual review exists, so this remains a high-severity correctness finding.`,
+      !reviewedNoVisibleDefect
     ));
   }
 }

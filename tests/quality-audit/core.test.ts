@@ -125,6 +125,60 @@ describe.sequential('PR A local quality-audit path', () => {
 
     const basic = result.metrics.supportedBasic;
     expect(basic.uniqueFixturesExecuted).toBe(10);
+
+    const executionForCase = (caseId: string) => result.executions.find((execution) => execution.caseId === caseId);
+    for (const [caseId, referenceId] of [
+      ['A-BASIC-01', 'A-BASIC-01-p1'],
+      ['A-FULL-PATHWAY-01', 'A-FULL-PATHWAY-01-p1']
+    ]) {
+      const execution = executionForCase(caseId)!;
+      expect(execution).toMatchObject({
+        pdfProduced: true,
+        structurallyValid: true,
+        correctlyRendered: true,
+        incorrectlyRendered: false
+      });
+      expect(execution.findings.find((finding) => finding.code === 'visual-reference-mismatch'))
+        .toMatchObject({ severity: 'informational', affectsCorrectness: false });
+      const visualEvidence = execution.evidence.visualCorrectness as Record<string, unknown>;
+      expect(visualEvidence).toMatchObject({
+        referenceId,
+        exactMatch: false,
+        humanVisualReview: {
+          source: 'user-supplied',
+          disposition: 'no-visible-defect',
+          candidateSha256: visualEvidence.candidateSha256
+        }
+      });
+    }
+
+    const textExecution = executionForCase('A-TEXT-01')!;
+    expect(textExecution).toMatchObject({
+      pdfProduced: true,
+      structurallyValid: true,
+      correctlyRendered: true,
+      incorrectlyRendered: false
+    });
+    const textEvidence = textExecution.evidence.text as { requiredTextFound: string[] };
+    expect(textEvidence.requiredTextFound).toEqual(expect.arrayContaining(['GDP', 'ₜ']));
+    expect(textExecution.findings.map((finding) => finding.code)).not.toEqual(
+      expect.arrayContaining(['required-text-missing', 'required-page-placement-mismatch'])
+    );
+
+    const basicRepeats = result.executions.filter((execution) => execution.caseId === 'A-DET-BASIC-01');
+    expect(basicRepeats).toHaveLength(3);
+    for (const execution of basicRepeats) {
+      expect(execution.correctlyRendered).toBe(true);
+      expect(execution.findings.some((finding) => finding.code === 'semantic-repeatability-mismatch')).toBe(false);
+      expect(execution.evidence.repeatability).toMatchObject({
+        semanticStructureEqual: true,
+        extractedTextEqual: true,
+        visualRasterEqual: true
+      });
+    }
+    expect(basic.incorrectlyRenderedPdfs).toBe(0);
+    expect(result.metrics.categories.repeatability.incorrectlyRenderedPdfs).toBe(0);
+
     expect(basic.pdfsProduced).toBeLessThanOrEqual(basic.uniqueFixturesExecuted);
     expect(basic.structurallyValidPdfs).toBeLessThanOrEqual(basic.pdfsProduced);
     expect(basic.correctlyRenderedPdfs).toBeLessThanOrEqual(basic.structurallyValidPdfs);
