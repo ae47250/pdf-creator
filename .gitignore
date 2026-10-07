@@ -13,3 +13,4 @@ playwright-report/
 coverage/
 test-artifacts/
 *.tsbuildinfo
+/output/
