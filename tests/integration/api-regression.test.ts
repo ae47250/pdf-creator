@@ -1,7 +1,12 @@
+import { createHash } from 'node:crypto';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PDFDocument } from 'pdf-lib';
 import { POST } from '@/app/api/v1/pdfs/route';
 import { parsePdfCreationRequest } from '@/lib/pdf/contract';
+// @ts-expect-error The runtime helper is deliberately plain ESM for use by both Node and Playwright.
+import { extractPdfText, extractPdfTextByPage, renderPdfPages, runTimestamp, validatePdfBuffer, writeJson } from '../../scripts/pdf-test-utils.mjs';
 import {
   invalidScenarios,
   malformedCssScenario,
@@ -100,4 +105,75 @@ describe.sequential('real local API regression path', () => {
     await expect(PDFDocument.load(blueBytes)).resolves.toBeDefined();
     await expect(PDFDocument.load(goldBytes)).resolves.toBeDefined();
   }, 60_000);
+
+  it('preserves edge-case content, pagination, and repeat rendering through the API', async () => {
+    const edgeFixtures = [
+      successFixtures.edgeFixedPages,
+      successFixtures.edgeLongTable,
+      successFixtures.edgeUnicode,
+      successFixtures.edgeEmbeddedMedia,
+      successFixtures.edgeWrapAndGrid
+    ];
+    const directory = join(process.cwd(), 'test-artifacts', 'pdf-regression', `edge-cases-${runTimestamp()}`);
+    await mkdir(directory, { recursive: true });
+    const results: Array<Record<string, unknown>> = [];
+
+    for (const fixture of edgeFixtures) {
+      const runs: Array<{ pdfPath: string; pageImages: string[]; pageCount: number; durationMs: number }> = [];
+      for (let repetition = 1; repetition <= 2; repetition += 1) {
+        const started = performance.now();
+        const response = await POST(request(payloadFor(fixture)));
+        expect(response.status, `${fixture.id} run ${repetition}`).toBe(200);
+        expect(response.headers.get('content-type')).toContain('application/pdf');
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        const pdf = await validatePdfBuffer(bytes);
+        expect(pdf.pageCount).toBeGreaterThanOrEqual(fixture.pageRange[0]);
+        expect(pdf.pageCount).toBeLessThanOrEqual(fixture.pageRange[1]);
+        for (const dimensions of pdf.pageDimensions) {
+          expect(dimensions.widthPoints).toBeCloseTo(612, 0);
+          expect(dimensions.heightPoints).toBeCloseTo(792, 0);
+        }
+        const pdfPath = join(directory, `${fixture.id}-run-${repetition}.pdf`);
+        await writeFile(pdfPath, bytes);
+        const extracted = await extractPdfText(pdfPath);
+        for (const sentinel of fixture.expectedText) {
+          expect(extracted, `${fixture.id} missing ${sentinel}`).toContain(sentinel);
+        }
+        if (fixture.id === 'edgeLongTable') {
+          const pages = await extractPdfTextByPage(pdfPath, pdf.pageCount);
+          for (const page of pages) {
+            expect(page.text, `table header missing on page ${page.pageNumber}`).toContain('Control label');
+          }
+          for (let row = 1; row <= 40; row += 1) {
+            const value = (100 + row + (row % 10) / 10).toFixed(1);
+            expect(extracted, `table value missing from row ${row}`).toContain(value);
+          }
+        }
+        if (fixture.id === 'edgeFixedPages') {
+          const pages = await extractPdfTextByPage(pdfPath, pdf.pageCount);
+          for (const [index, name] of ['one', 'two', 'three'].entries()) {
+            expect(pages[index].text).toContain(`Fixed page ${name}`);
+            expect(pages[index].text).toContain(`Page ${index + 1} of 3`);
+          }
+        }
+        const pageImages = await renderPdfPages(pdfPath, join(directory, `${fixture.id}-run-${repetition}`));
+        expect(pageImages).toHaveLength(pdf.pageCount);
+        runs.push({ pdfPath, pageImages, pageCount: pdf.pageCount, durationMs: Math.round(performance.now() - started) });
+      }
+
+      expect(runs[1].pageCount).toBe(runs[0].pageCount);
+      const rasterHashes = await Promise.all(runs.map(async (run) => Promise.all(run.pageImages.map(async (path) =>
+        createHash('sha256').update(await readFile(path)).digest('hex')
+      ))));
+      expect(rasterHashes[1], `${fixture.id} repeat raster`).toEqual(rasterHashes[0]);
+      results.push({ id: fixture.id, runs, rasterHashes: rasterHashes[0], status: 'pass' });
+    }
+
+    await writeJson(join(directory, 'summary.json'), {
+      kind: 'ready-html-edge-cases',
+      testedAt: new Date().toISOString(),
+      environment: 'in-process Next.js API route with installed Chrome and Poppler',
+      results
+    });
+  }, 300_000);
 });

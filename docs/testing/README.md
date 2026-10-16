@@ -98,6 +98,7 @@ from Git because its reproducible PDFs, PNGs, and JSON measurements can be bulky
 - HTML, CSS, URL, SVG, and embedded-resource safety checks
 - PDF signature, parsing, page size, page count, metadata, and SHA-256 checks
 - Local Chromium conversion of all successful fixtures
+- Five HTML edge cases for fixed pages, table pagination, Unicode, embedded media, and wrapping; the full local suite checks page text and repeat-render image hashes
 - Separate application CSS/content/filename checks
 
 ### Requires local environment variables

@@ -4,8 +4,8 @@ import { invalidScenarios, malformedCssScenario, payloadFor, requiredScenarioIds
 
 describe('production regression fixture catalog', () => {
   it('maps every required fixture category to a stable scenario', () => {
-    expect(requiredScenarioIds).toHaveLength(22);
-    expect(new Set(requiredScenarioIds).size).toBe(22);
+    expect(requiredScenarioIds).toHaveLength(27);
+    expect(new Set(requiredScenarioIds).size).toBe(27);
     expect(invalidScenarios).toHaveLength(7);
     expect(malformedCssScenario.id).toBe('malformed-css');
   });

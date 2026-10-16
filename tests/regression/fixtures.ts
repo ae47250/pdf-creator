@@ -102,6 +102,188 @@ function appFixture(name: string, color: string, accent: string): string {
   );
 }
 
+const edgeFixedPages = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Fixed-page boundary report</title>
+  <style>
+    @page { size: Letter; margin: 0; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #183047; font: 14px/1.45 Arial, sans-serif; }
+    [data-pdf-page] { position: relative; width: 8.5in; height: 11in; padding: .55in; overflow: hidden; break-after: page; }
+    header { border-bottom: 3px solid #246a8a; padding-bottom: 12px; font-weight: 700; }
+    h1 { font-size: 27px; margin: 32px 0 12px; }
+    .card { border: 1px solid #9cb4c3; border-radius: 8px; padding: 18px; background: #eef5f8; }
+    footer { position: absolute; bottom: .4in; right: .55in; left: .55in; border-top: 1px solid #9cb4c3; padding-top: 8px; text-align: right; }
+  </style>
+</head>
+<body>
+  <section data-pdf-page>
+    <header>Fixed-page boundary report</header>
+    <h1>Fixed page one</h1>
+    <div class="card">The first page establishes the top, side, and footer boundaries.</div>
+    <footer>Page 1 of 3</footer>
+  </section>
+  <section data-pdf-page>
+    <header>Fixed-page boundary report</header>
+    <h1>Fixed page two</h1>
+    <div class="card">This middle page verifies isolated page rendering and ordering.</div>
+    <footer>Page 2 of 3</footer>
+  </section>
+  <section data-pdf-page>
+    <header>Fixed-page boundary report</header>
+    <h1>Fixed page three</h1>
+    <div class="card">The final page must not be dropped, duplicated, or reordered.</div>
+    <footer>Page 3 of 3</footer>
+  </section>
+</body>
+</html>`;
+
+const edgeLongTable = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Long table pagination</title>
+  <style>
+    @page { size: Letter; margin: .55in; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #24342b; font: 12px/1.35 Arial, sans-serif; }
+    h1 { font-size: 24px; margin: 0 0 12px; }
+    p { margin: 0 0 16px; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { display: table-header-group; }
+    tr { break-inside: avoid; }
+    th, td { border: 1px solid #a9b8ac; padding: 8px 10px; text-align: left; }
+    th { background: #dcebe0; }
+    tbody tr:nth-child(even) { background: #f4f8f5; }
+  </style>
+</head>
+<body>
+  <h1>Long table pagination</h1>
+  <p>Every row, including the final row, must survive a page break. The header should repeat.</p>
+  <table>
+    <thead><tr><th>Row</th><th>Fictional value</th><th>Control label</th></tr></thead>
+    <tbody>
+      <tr><td>01</td><td>101.1</td><td>North sample</td></tr>
+      <tr><td>02</td><td>102.2</td><td>North sample</td></tr>
+      <tr><td>03</td><td>103.3</td><td>North sample</td></tr>
+      <tr><td>04</td><td>104.4</td><td>North sample</td></tr>
+      <tr><td>05</td><td>105.5</td><td>North sample</td></tr>
+      <tr><td>06</td><td>106.6</td><td>North sample</td></tr>
+      <tr><td>07</td><td>107.7</td><td>North sample</td></tr>
+      <tr><td>08</td><td>108.8</td><td>North sample</td></tr>
+      <tr><td>09</td><td>109.9</td><td>North sample</td></tr>
+      <tr><td>10</td><td>110.0</td><td>North sample</td></tr>
+      <tr><td>11</td><td>111.1</td><td>North sample</td></tr>
+      <tr><td>12</td><td>112.2</td><td>North sample</td></tr>
+      <tr><td>13</td><td>113.3</td><td>North sample</td></tr>
+      <tr><td>14</td><td>114.4</td><td>North sample</td></tr>
+      <tr><td>15</td><td>115.5</td><td>North sample</td></tr>
+      <tr><td>16</td><td>116.6</td><td>North sample</td></tr>
+      <tr><td>17</td><td>117.7</td><td>North sample</td></tr>
+      <tr><td>18</td><td>118.8</td><td>North sample</td></tr>
+      <tr><td>19</td><td>119.9</td><td>North sample</td></tr>
+      <tr><td>20</td><td>120.0</td><td>North sample</td></tr>
+      <tr><td>21</td><td>121.1</td><td>South sample</td></tr>
+      <tr><td>22</td><td>122.2</td><td>South sample</td></tr>
+      <tr><td>23</td><td>123.3</td><td>South sample</td></tr>
+      <tr><td>24</td><td>124.4</td><td>South sample</td></tr>
+      <tr><td>25</td><td>125.5</td><td>South sample</td></tr>
+      <tr><td>26</td><td>126.6</td><td>South sample</td></tr>
+      <tr><td>27</td><td>127.7</td><td>South sample</td></tr>
+      <tr><td>28</td><td>128.8</td><td>South sample</td></tr>
+      <tr><td>29</td><td>129.9</td><td>South sample</td></tr>
+      <tr><td>30</td><td>130.0</td><td>South sample</td></tr>
+      <tr><td>31</td><td>131.1</td><td>South sample</td></tr>
+      <tr><td>32</td><td>132.2</td><td>South sample</td></tr>
+      <tr><td>33</td><td>133.3</td><td>South sample</td></tr>
+      <tr><td>34</td><td>134.4</td><td>South sample</td></tr>
+      <tr><td>35</td><td>135.5</td><td>South sample</td></tr>
+      <tr><td>36</td><td>136.6</td><td>South sample</td></tr>
+      <tr><td>37</td><td>137.7</td><td>South sample</td></tr>
+      <tr><td>38</td><td>138.8</td><td>South sample</td></tr>
+      <tr><td>39</td><td>139.9</td><td>South sample</td></tr>
+      <tr><td>40</td><td>140.0</td><td>Final row sentinel</td></tr>
+    </tbody>
+  </table>
+</body>
+</html>`;
+
+const edgeUnicode = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Unicode and notation</title>
+  <style>
+    @page { size: Letter; margin: .6in; }
+    body { margin: 0; color: #222; font: 18px/1.6 Arial, sans-serif; }
+    h1 { color: #304d7a; font-size: 28px; }
+    .sample { padding: 10px 14px; border-left: 4px solid #304d7a; background: #f3f6fb; }
+  </style>
+</head>
+<body>
+  <h1>Unicode and notation</h1>
+  <p class="sample">Español: año, acción. Français: élève, façade. Português: coração. Deutsch: Straße.</p>
+  <p class="sample">Greek: α β γ Δ π Σ. Economics: GDPₜ = Cₜ + Iₜ + Gₜ + NXₜ.</p>
+  <p class="sample">Mathematics: x² + y² ≥ 0; ∑ᵢ qᵢpᵢ = 42.</p>
+  <p>The final line is a visual glyph and extraction sentinel: café 42.</p>
+</body>
+</html>`;
+
+const edgeEmbeddedMedia = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Embedded artwork and links</title>
+  <style>
+    @page { size: Letter; margin: .55in; }
+    body { margin: 0; color: #17324d; font: 16px/1.45 Arial, sans-serif; }
+    h1 { font-size: 27px; margin: 0 0 12px; }
+    figure { margin: 20px 0; padding: 16px; border: 1px solid #afc5d4; background: #f7fbfd; }
+    img { display: block; width: 100%; max-width: 6.3in; height: auto; }
+    figcaption { margin-top: 10px; font-size: 13px; }
+    a { color: #075c91; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <h1>Embedded artwork and links</h1>
+  <p>This page must render without fetching a network resource.</p>
+  <figure>
+    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NDAiIGhlaWdodD0iMjQwIiB2aWV3Qm94PSIwIDAgNjQwIDI0MCI+PHJlY3Qgd2lkdGg9IjY0MCIgaGVpZ2h0PSIyNDAiIGZpbGw9IiNlZWY1ZmIiLz48cmVjdCB4PSI2NCIgeT0iMTE4IiB3aWR0aD0iMTEwIiBoZWlnaHQ9IjgyIiBmaWxsPSIjMjg3NmE1Ii8+PHJlY3QgeD0iMjM4IiB5PSI3OCIgd2lkdGg9IjExMCIgaGVpZ2h0PSIxMjIiIGZpbGw9IiM0ZDk0NjMiLz48cmVjdCB4PSI0MTIiIHk9IjM4IiB3aWR0aD0iMTEwIiBoZWlnaHQ9IjE2MiIgZmlsbD0iI2M5N2IzMiIvPjx0ZXh0IHg9IjY0IiB5PSIyOCIgZm9udC1zaXplPSIyMCIgZmlsbD0iIzE3MzI0ZCI+UXVhcnRlcmx5IGluZGV4PC90ZXh0Pjwvc3ZnPg==" alt="Three rising bars in a fictional quarterly index chart">
+    <figcaption>Figure 1. Fictional quarterly index: 82, 122, and 162.</figcaption>
+  </figure>
+  <p><a href="https://example.com/reference">External reference link</a> and <a href="#note">internal note link</a>.</p>
+  <p id="note">Internal note destination.</p>
+</body>
+</html>`;
+
+const edgeWrapAndGrid = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Wrapping and grid boundaries</title>
+  <style>
+    @page { size: Letter; margin: .45in; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #2c2d35; font: 14px/1.4 Arial, sans-serif; }
+    h1 { font-size: 25px; margin: 0 0 18px; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+    .card { min-width: 0; padding: 16px; border: 1px solid #b2a5c2; border-radius: 8px; background: #f7f3fb; }
+    .token { overflow-wrap: anywhere; word-break: break-word; font-family: monospace; }
+    .footer { margin-top: 22px; padding: 12px; background: #e8e1f0; }
+  </style>
+</head>
+<body>
+  <h1>Wrapping and grid boundaries</h1>
+  <div class="grid">
+    <div class="card"><strong>Left column</strong><p>The left cell contains an unbroken token that must wrap inside its border.</p><p class="token">CASELEFT-ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-END</p></div>
+    <div class="card"><strong>Right column</strong><p>Long labels and compact boxes should remain aligned with the left column.</p><p class="token">CASERIGHT-1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-END</p></div>
+  </div>
+  <p class="footer">Both terminal markers must remain visible: CASELEFT-END and CASERIGHT-END.</p>
+</body>
+</html>`;
+
 export const successFixtures: Record<string, SuccessFixture> = {
   minimal: { id: 'minimal', title: 'Minimal one-page document', html: document('Minimal Report', '<h1>Minimal Report</h1><p>Minimal fixture sentinel.</p>'), filename: 'Minimal_Report.pdf', expectedText: ['Minimal Report', 'Minimal fixture sentinel'], pageRange: [1, 1], visual: true },
   academic: { id: 'academic', title: 'Realistic multi-page academic report', html: academic, filename: 'Academic_Report.pdf', expectedText: ['Public Finance and Local Investment', 'Page 3 of 3'], pageRange: [3, 3], visual: true },
@@ -115,6 +297,11 @@ export const successFixtures: Record<string, SuccessFixture> = {
   economics: { id: 'economics', title: 'Mathematical and economics notation', html: document('Economics Notation', '<h1>Economics Notation</h1><p>GDPₜ = Cₜ + Iₜ + Gₜ + NXₜ; π, β, γ, λ, μ, σ; x² ≥ 0.</p>'), filename: 'Economics_Notation.pdf', expectedText: ['Economics Notation', 'GDP'], pageRange: [1, 1], visual: false },
   short: { id: 'short', title: 'Very short document', html: document('Short', '<p>OK</p>'), filename: 'Short.pdf', expectedText: ['OK'], pageRange: [1, 1], visual: false },
   large: { id: 'large', title: 'Large but permitted document', html: document('Large Permitted Report', '<h1>Large Permitted Report</h1><p>Large permitted fixture sentinel.</p>', `/*${'x'.repeat(3_000_000)}*/`), filename: 'Large_Permitted_Report.pdf', expectedText: ['Large Permitted Report'], pageRange: [1, 1], visual: false },
+  edgeFixedPages: { id: 'edgeFixedPages', title: 'Fixed-page boundary report', html: edgeFixedPages, filename: 'Edge_Fixed_Pages.pdf', expectedText: ['Fixed page one', 'Fixed page two', 'Fixed page three', 'Page 3 of 3'], pageRange: [3, 3], visual: true },
+  edgeLongTable: { id: 'edgeLongTable', title: 'Long table pagination edge case', html: edgeLongTable, filename: 'Edge_Long_Table.pdf', expectedText: ['Long table pagination', 'North sample', 'Final row sentinel'], pageRange: [2, 4], visual: true, page: { format: 'Letter', orientation: 'portrait', marginsInches: { top: 0.55, right: 0.55, bottom: 0.55, left: 0.55 } } },
+  edgeUnicode: { id: 'edgeUnicode', title: 'Unicode and notation edge case', html: edgeUnicode, filename: 'Edge_Unicode.pdf', expectedText: ['Unicode and notation', 'Español', 'Straße', 'α β γ Δ π Σ', 'x² + y² ≥ 0', '∑ᵢ qᵢpᵢ = 42', 'café 42'], pageRange: [1, 1], visual: true, page: { format: 'Letter', orientation: 'portrait', marginsInches: { top: 0.6, right: 0.6, bottom: 0.6, left: 0.6 } } },
+  edgeEmbeddedMedia: { id: 'edgeEmbeddedMedia', title: 'Embedded artwork and links edge case', html: edgeEmbeddedMedia, filename: 'Edge_Embedded_Media.pdf', expectedText: ['Embedded artwork and links', 'Figure 1.', 'Internal note destination'], pageRange: [1, 1], visual: true, page: { format: 'Letter', orientation: 'portrait', marginsInches: { top: 0.55, right: 0.55, bottom: 0.55, left: 0.55 } } },
+  edgeWrapAndGrid: { id: 'edgeWrapAndGrid', title: 'Wrapping and grid boundaries edge case', html: edgeWrapAndGrid, filename: 'Edge_Wrap_And_Grid.pdf', expectedText: ['Wrapping and grid boundaries', 'CASELEFT-END', 'CASERIGHT-END'], pageRange: [1, 1], visual: true, page: { format: 'Letter', orientation: 'portrait', marginsInches: { top: 0.45, right: 0.45, bottom: 0.45, left: 0.45 } } },
   appBlue: { id: 'appBlue', title: 'Application Blue CSS', html: appFixture('Application Blue', '#e8f3ff', '#0b5cad'), filename: 'Application_Blue.pdf', expectedText: ['Application Blue CSS Isolation', 'Only Application Blue'], pageRange: [1, 1], visual: true },
   appGold: { id: 'appGold', title: 'Application Gold CSS', html: appFixture('Application Gold', '#fff6d8', '#8a5a00'), filename: 'Application_Gold.pdf', expectedText: ['Application Gold CSS Isolation', 'Only Application Gold'], pageRange: [1, 1], visual: true }
 };
@@ -144,7 +331,8 @@ export const malformedCssScenario = {
 
 export const requiredScenarioIds = [
   'minimal', 'academic', 'long', 'flowing20', 'tables', 'media', 'paged', 'unicode', 'accented', 'economics', 'short', 'large',
-  malformedCssScenario.id, ...invalidScenarios.map((scenario) => scenario.id), 'appBlue', 'appGold'
+  malformedCssScenario.id, ...invalidScenarios.map((scenario) => scenario.id),
+  'edgeFixedPages', 'edgeLongTable', 'edgeUnicode', 'edgeEmbeddedMedia', 'edgeWrapAndGrid', 'appBlue', 'appGold'
 ];
 
 export const representativeFixtureIds = ['minimal', 'academic', 'tables', 'media', 'unicode', 'appBlue', 'appGold'] as const;
