@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('development console renders and creates a validated direct PDF', async ({ page }) => {
+test('development console renders and creates a direct PDF', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('img', { name: 'Urveska' })).toBeVisible();
   await expect(page.getByRole('img', { name: 'Mr. Lombardi playing drums' })).toBeVisible();
@@ -16,9 +16,9 @@ test('development console renders and creates a validated direct PDF', async ({ 
   await page.getByLabel('Saved fixture').selectOption('fixed');
   await expect(page.getByLabel('Exact page count (optional)')).toHaveValue('3');
   await page.getByLabel('Filename').fill('Console_Named_Report.pdf');
-  await page.getByRole('button', { name: 'Generate validated PDF' }).click();
-  await expect(page.getByText('PDF created and validated.')).toBeVisible({ timeout: 45_000 });
-  await expect(page.getByRole('heading', { name: 'Validated sandbox preview' })).toBeVisible();
+  await page.getByRole('button', { name: 'Generate PDF' }).click();
+  await expect(page.getByText('PDF created; structural checks passed. Review every page for layout.')).toBeVisible({ timeout: 45_000 });
+  await expect(page.getByRole('heading', { name: 'Submitted HTML preview' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Result' })).toBeVisible();
   await expect(page.locator('.results')).toContainText('pageCount');
   await expect(page.locator('.results')).toContainText('3');
@@ -28,7 +28,7 @@ test('development console renders and creates a validated direct PDF', async ({ 
   expect(download.suggestedFilename()).toBe('Console_Named_Report.pdf');
 });
 
-test('exact page count is optional and omitted when blank', async ({ page }) => {
+test('fixture margins are submitted and exact page count stays optional', async ({ page }) => {
   let submittedPayload: Record<string, unknown> | undefined;
   await page.route('**/api/console/pdfs', async (route) => {
     submittedPayload = route.request().postDataJSON() as Record<string, unknown>;
@@ -47,19 +47,29 @@ test('exact page count is optional and omitted when blank', async ({ page }) => 
   for (const fixture of ['onePage', 'flowing', 'appA']) {
     await page.getByLabel('Saved fixture').selectOption(fixture);
     await expect(exactPageCount).toHaveValue('');
+    await expect(page.getByLabel('Page margins (inches)')).toHaveValue(fixture === 'flowing' ? '0.55' : '0');
   }
+
+  await page.getByLabel('Saved fixture').selectOption('flowing');
+  await page.getByRole('button', { name: 'Generate PDF' }).click();
+  await expect(page.getByText('PDF created; structural checks passed. Review every page for layout.')).toBeVisible();
+  expect(submittedPayload?.page).toMatchObject({ marginsInches: { top: 0.55, right: 0.55, bottom: 0.55, left: 0.55 } });
+  expect(submittedPayload).not.toHaveProperty('expectedPageCount');
 
   await page.getByLabel('Saved fixture').selectOption('fixed');
   await expect(exactPageCount).toHaveValue('3');
+  await expect(page.getByLabel('Page margins (inches)')).toHaveValue('0');
   await page.getByLabel('Upload .html').setInputFiles({
     name: 'uploaded.html',
     mimeType: 'text/html',
     buffer: Buffer.from('<!doctype html><html><body><p>Uploaded test HTML.</p></body></html>')
   });
   await expect(exactPageCount).toHaveValue('');
+  await expect(page.getByLabel('Page margins (inches)')).toHaveValue('0');
 
-  await page.getByRole('button', { name: 'Generate validated PDF' }).click();
-  await expect(page.getByText('PDF created and validated.')).toBeVisible();
+  await page.getByRole('button', { name: 'Generate PDF' }).click();
+  await expect(page.getByText('PDF created; structural checks passed. Review every page for layout.')).toBeVisible();
   expect(submittedPayload).toBeDefined();
   expect(submittedPayload).not.toHaveProperty('expectedPageCount');
+  expect(submittedPayload?.page).toMatchObject({ marginsInches: { top: 0, right: 0, bottom: 0, left: 0 } });
 });

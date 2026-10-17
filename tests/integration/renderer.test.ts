@@ -1,12 +1,15 @@
 import { readFile } from 'node:fs/promises';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import { renderPdf } from '@/lib/pdf/renderer';
+import { SAVED_FIXTURES } from '@/lib/pdf/fixtures';
 
 const page = {
   format: 'Letter' as const,
   orientation: 'portrait' as const,
   marginsInches: { top: 0, right: 0, bottom: 0, left: 0 }
 };
+const hasPdftotext = !spawnSync('pdftotext', ['-v']).error;
 
 async function request(fixture: string, expectedPageCount: number) {
   return {
@@ -36,6 +39,42 @@ describe.sequential('local Chromium renderer', () => {
     expect(result.pageCount).toBe(3);
     expect(result.markerCount).toBe(0);
     expect(result.layoutDiagnostics).toMatchObject({ mode: 'observe-only', observationCount: 0 });
+  }, 45_000);
+
+  it.skipIf(!hasPdftotext)('keeps the console flowing fixture sections together inside page margins', async () => {
+    const result = await renderPdf({
+      ...(await request('one-page.html', 1)),
+      html: SAVED_FIXTURES.flowing,
+      expectedPageCount: undefined,
+      page: { ...page, marginsInches: { top: 0.55, right: 0.55, bottom: 0.55, left: 0.55 } }
+    }, 'test');
+    const pdf = Buffer.from(result.pdf);
+    const pages = execFileSync('pdftotext', ['-layout', '-', '-'], { input: pdf }).toString().trimEnd().split('\f');
+    expect(pages).toHaveLength(result.pageCount);
+    const fullText = pages.join('\f');
+    expect([...fullText.matchAll(/Section (\d+)/g)].map((match) => Number(match[1])))
+      .toEqual(Array.from({ length: 55 }, (_, index) => index + 1));
+    expect(fullText.match(/This neutral paragraph/g)).toHaveLength(55);
+    for (let section = 1; section <= 55; section++) {
+      const headingAndParagraph = new RegExp(`Section ${section}(?!\\d)\\s+This neutral paragraph`);
+      expect(pages.filter((text) => headingAndParagraph.test(text))).toHaveLength(1);
+    }
+
+    const boxes = execFileSync('pdftotext', ['-bbox-layout', '-', '-'], { input: pdf }).toString();
+    const pageXml = [...boxes.matchAll(/<page\b[^>]*>([\s\S]*?)<\/page>/g)];
+    expect(pageXml).toHaveLength(result.pageCount);
+    const { widthPoints, heightPoints } = result.pageDimensions[0];
+    const minimumInset = 0.55 * 72 - 1;
+    for (const [, xml] of pageXml) {
+      const words = [...xml.matchAll(/<word\b[^>]*xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)"/g)];
+      expect(words.length).toBeGreaterThan(0);
+      for (const [, left, top, right, bottom] of words) {
+        expect(Number(left)).toBeGreaterThanOrEqual(minimumInset);
+        expect(Number(top)).toBeGreaterThanOrEqual(minimumInset);
+        expect(Number(right)).toBeLessThanOrEqual(widthPoints - minimumInset);
+        expect(Number(bottom)).toBeLessThanOrEqual(heightPoints - minimumInset);
+      }
+    }
   }, 45_000);
 
   it('isolates, validates, and merges fixed pages in order', async () => {

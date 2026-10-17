@@ -14,6 +14,7 @@ export default function ConsoleForm({ appABaseline }: { appABaseline: string }) 
   const [storeHtml, setStoreHtml] = useState(true);
   const [format, setFormat] = useState('Letter');
   const [orientation, setOrientation] = useState('portrait');
+  const [marginInches, setMarginInches] = useState('0');
   const [expectedPageCount, setExpectedPageCount] = useState('');
   const [retentionDays, setRetentionDays] = useState('30');
   const [status, setStatus] = useState('Ready.');
@@ -30,6 +31,7 @@ export default function ConsoleForm({ appABaseline }: { appABaseline: string }) 
     setFixture(name);
     setHtml(name === 'appA' ? appABaseline : SAVED_FIXTURES[name]);
     setExpectedPageCount(name === 'fixed' ? '3' : '');
+    setMarginInches(name === 'flowing' ? '0.55' : '0');
   }
 
   async function upload(file: File | undefined) {
@@ -44,6 +46,7 @@ export default function ConsoleForm({ appABaseline }: { appABaseline: string }) 
     }
     setHtml(await file.text());
     setExpectedPageCount('');
+    setMarginInches('0');
     setStatus(`Loaded ${file.size.toLocaleString()} HTML bytes.`);
   }
 
@@ -63,7 +66,7 @@ export default function ConsoleForm({ appABaseline }: { appABaseline: string }) 
         page: {
           format,
           orientation,
-          marginsInches: { top: 0, right: 0, bottom: 0, left: 0 }
+          marginsInches: { top: Number(marginInches), right: Number(marginInches), bottom: Number(marginInches), left: Number(marginInches) }
         },
         ...(expectedPageCount ? { expectedPageCount: Number(expectedPageCount) } : {}),
         ...(storeResult ? { retentionDays: Number(retentionDays) } : {}),
@@ -101,7 +104,7 @@ export default function ConsoleForm({ appABaseline }: { appABaseline: string }) 
       } else {
         setResult(await response.json());
       }
-      setStatus('PDF created and validated.');
+      setStatus('PDF created; structural checks passed. Review every page for layout.');
     } catch (error) {
       setStatus(error instanceof Error ? `PDF creation failed: ${error.message}` : 'PDF creation failed.');
     }
@@ -113,7 +116,7 @@ export default function ConsoleForm({ appABaseline }: { appABaseline: string }) 
         <h2>Plain-text smoke test</h2>
         <label htmlFor="smoke-text">Fictional text</label>
         <textarea id="smoke-text" rows={4} value={smokeText} onChange={(event) => setSmokeText(event.target.value)} />
-        <button type="button" className="secondary" onClick={() => { setHtml(smokeHtml(smokeText)); setExpectedPageCount(''); setStatus('Smoke-test HTML prepared.'); }}>Prepare smoke-test HTML</button>
+        <button type="button" className="secondary" onClick={() => { setHtml(smokeHtml(smokeText)); setExpectedPageCount(''); setMarginInches('0'); setStatus('Smoke-test HTML prepared.'); }}>Prepare smoke-test HTML</button>
       </section>
 
       <section className="panel wide">
@@ -136,6 +139,7 @@ export default function ConsoleForm({ appABaseline }: { appABaseline: string }) 
         <label>Filename<input value={filename} onChange={(event) => setFilename(event.target.value)} /></label>
         <label>Page format<select value={format} onChange={(event) => setFormat(event.target.value)}><option>Letter</option><option>A4</option><option>Legal</option></select></label>
         <label>Orientation<select value={orientation} onChange={(event) => setOrientation(event.target.value)}><option>portrait</option><option>landscape</option></select></label>
+        <label>Page margins (inches)<input type="number" min="0" max="2" step="0.05" value={marginInches} onChange={(event) => setMarginInches(event.target.value)} /></label>
         <div>
           <label htmlFor="exact-page-count">Exact page count (optional)</label>
           <input id="exact-page-count" type="number" min="1" max="25" value={expectedPageCount} onChange={(event) => setExpectedPageCount(event.target.value)} aria-describedby="exact-page-count-help" />
@@ -144,11 +148,11 @@ export default function ConsoleForm({ appABaseline }: { appABaseline: string }) 
         <label className="check"><input type="checkbox" checked={storeResult} onChange={(event) => setStoreResult(event.target.checked)} /> Store result</label>
         <label className="check"><input type="checkbox" checked={storeHtml} disabled={!storeResult} onChange={(event) => setStoreHtml(event.target.checked)} /> Store rendered HTML</label>
         <label>Retention<select disabled={!storeResult} value={retentionDays} onChange={(event) => setRetentionDays(event.target.value)}><option value="1">1 day</option><option value="7">7 days</option><option value="30">30 days</option></select></label>
-        <button type="button" onClick={() => void submit()} disabled={busy}>{busy ? 'Creating…' : 'Generate validated PDF'}</button>
+        <button type="button" onClick={() => void submit()} disabled={busy}>{busy ? 'Creating…' : 'Generate PDF'}</button>
         <p className="status" aria-live="polite">{status}</p>
       </section>
 
-      {previewHtml && <section className="panel wide"><h2>Validated sandbox preview</h2><iframe className="preview" sandbox="" srcDoc={previewHtml} title="Validated submitted HTML preview" /></section>}
+      {previewHtml && <section className="panel wide"><h2>Submitted HTML preview</h2><iframe className="preview" sandbox="" srcDoc={previewHtml} title="Submitted HTML preview" /></section>}
       {result && <section className="panel wide"><h2>Result</h2><dl className="results">{Object.entries(result).filter(([key]) => key !== 'links').map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</dd></div>)}</dl>{result.links?.view && <p><a href={result.links.view} target="_blank" rel="noreferrer">Open stored PDF</a> · <a href={result.links.download} target="_blank" rel="noreferrer">Download stored PDF</a></p>}{directPdfUrl && <p><a href={directPdfUrl} download={directPdfFilename}>Download direct PDF</a></p>}{previewUrl && <iframe className="pdf-preview" src={previewUrl} title="Generated PDF preview" />}</section>}
     </div>
   );

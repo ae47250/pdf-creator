@@ -6,7 +6,7 @@ main{padding:.55in}h1{color:#245b35}section{margin:0 0 24px}${extraCss}
 
 export const SAVED_FIXTURES = {
   onePage: shell('Generic one-page fixture', '<p>This fictional document verifies a simple one-page conversion.</p><p><a href="https://example.com/citation">Example HTTPS citation</a></p>'),
-  flowing: shell('Generic flowing fixture', Array.from({ length: 55 }, (_, index) => `<section><h2>Section ${index + 1}</h2><p>This neutral paragraph verifies normal browser pagination for a flowing document. It contains no application data.</p></section>`).join('')),
+  flowing: shell('Generic flowing fixture', Array.from({ length: 55 }, (_, index) => `<section><h2>Section ${index + 1}</h2><p>This neutral paragraph verifies normal browser pagination for a flowing document. It contains no application data.</p></section>`).join(''), 'main{padding:0}section{break-inside:avoid}'),
   fixed: shell('Generic fixed-page fixture', Array.from({ length: 3 }, (_, index) => `<section data-pdf-page><h2>Fixed page ${index + 1}</h2><p>This marker must create exactly one PDF page.</p></section>`).join(''), 'main{padding:0}section[data-pdf-page]{width:8.5in;height:11in;padding:.6in;overflow:hidden;break-after:page}')
 } as const;
 
