@@ -5,7 +5,7 @@ import { posix } from 'node:path';
 import puppeteer, { type Browser, type Page } from 'puppeteer-core';
 import { PdfServiceError } from './errors';
 import { validateAndNormalizeHtml } from './html-safety';
-import { LIMITS } from './limits';
+import { LIMITS, PAGE_POINTS } from './limits';
 import {
   countPdfPages,
   finalizeAndValidatePdf,
@@ -204,15 +204,19 @@ async function renderFixedPages(
   request: PdfCreationRequest
 ): Promise<{ pdf: Uint8Array; layoutDiagnostics: null }> {
   const pages: Uint8Array[] = [];
-  const internalLinks: InternalPdfLink[] = [];
+  const internalLinks: (InternalPdfLink & { targetId: string })[] = [];
+  const targetTops = new Map<string, number>();
+  const paper = PAGE_POINTS[request.page.format];
+  const width = request.page.orientation === 'portrait' ? paper.widthPoints : paper.heightPoints;
+  // Match print layout before measuring responsive content or transforms.
+  await page.setViewport({ ...page.viewport()!, width: Math.round((width / 72 - request.page.marginsInches.left - request.page.marginsInches.right) * 96) });
   for (let index = 0; index < markerCount; index += 1) {
     await loadAndWait(page, html);
     const geometry = await page.evaluate((selectedIndex) => {
       const markers = Array.from(document.querySelectorAll<HTMLElement>('[data-pdf-page]'));
       const selected = markers[selectedIndex];
-      if (!selected) return { missing: true, overflow: false, internalLinks: [] };
-      const selectedBeforeIsolation = selected.getBoundingClientRect();
-      const internalLinks = Array.from(selected.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')).flatMap((anchor) => {
+      if (!selected) return { missing: true, overflow: false, internalLinks: [], targets: [], printScale: 1 };
+      const anchors = Array.from(selected.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')).flatMap((anchor) => {
         const href = anchor.getAttribute('href');
         if (!href || href.length < 2) return [];
         let targetId: string;
@@ -222,18 +226,7 @@ async function renderFixedPages(
         if (!target || !targetMarker) return [];
         const targetPageIndex = markers.indexOf(targetMarker);
         if (targetPageIndex < 0) return [];
-        const anchorBox = anchor.getBoundingClientRect();
-        const targetMarkerBox = targetMarker.getBoundingClientRect();
-        const targetBox = target.getBoundingClientRect();
-        return [{
-          sourcePageIndex: selectedIndex,
-          targetPageIndex,
-          leftPixels: anchorBox.left - selectedBeforeIsolation.left,
-          topPixels: anchorBox.top - selectedBeforeIsolation.top,
-          widthPixels: anchorBox.width,
-          heightPixels: anchorBox.height,
-          targetTopPixels: targetBox.top - targetMarkerBox.top
-        }];
+        return [{ anchor, targetId, targetPageIndex }];
       });
       for (const candidate of Array.from(document.body.querySelectorAll<HTMLElement>('*')).reverse()) {
         if (candidate === selected || candidate.contains(selected) || selected.contains(candidate)) continue;
@@ -243,6 +236,13 @@ async function renderFixedPages(
       selected.style.breakAfter = 'auto';
       selected.style.pageBreakBefore = 'auto';
       selected.style.pageBreakAfter = 'auto';
+      const internalLinks = anchors.flatMap(({ anchor, targetId, targetPageIndex }) => Array.from(anchor.getClientRects()).map(rect => ({
+        sourcePageIndex: selectedIndex, targetPageIndex, targetId,
+        leftPixels: rect.left, topPixels: rect.top,
+        widthPixels: rect.width, heightPixels: rect.height, targetTopPixels: 0
+      })));
+      const targets = [selected, ...selected.querySelectorAll<HTMLElement>('[id]')]
+        .filter(element => element.id).map(element => ({ id: element.id, top: element.getBoundingClientRect().top }));
       const box = selected.getBoundingClientRect();
       let left = box.left;
       let top = box.top;
@@ -256,7 +256,10 @@ async function renderFixedPages(
         bottom = Math.max(bottom, rect.bottom);
       }
       const overflow = left < box.left - 1 || top < box.top - 1 || right > box.right + 1 || bottom > box.bottom + 1 || selected.scrollWidth > selected.clientWidth + 1 || selected.scrollHeight > selected.clientHeight + 1;
-      return { missing: false, overflow, internalLinks };
+      // Chromium shrinks the printable viewport when fixed-width content extends it.
+      // Margins remain physical inches and are added after this content scale.
+      const printScale = document.documentElement.clientWidth / Math.max(document.documentElement.clientWidth, document.documentElement.scrollWidth);
+      return { missing: false, overflow, internalLinks, targets, printScale };
     }, index);
     if (geometry.missing) throw new PdfServiceError('pdf_invalid', 500, 'A fixed-page marker disappeared during rendering.');
     if (geometry.overflow) throw new PdfServiceError('fixed_page_overflow', 422, `Fixed page ${index + 1} contains overflowing content.`);
@@ -264,9 +267,11 @@ async function renderFixedPages(
     if (await countPdfPages(bytes) !== 1) {
       throw new PdfServiceError('fixed_page_overflow', 422, `Fixed page ${index + 1} did not render as exactly one PDF page.`);
     }
-    internalLinks.push(...geometry.internalLinks);
+    for (const target of geometry.targets) targetTops.set(`${index}:${target.id}`, target.top * geometry.printScale + request.page.marginsInches.top * 96);
+    internalLinks.push(...geometry.internalLinks.map(link => ({ ...link, leftPixels: link.leftPixels * geometry.printScale + request.page.marginsInches.left * 96, topPixels: link.topPixels * geometry.printScale + request.page.marginsInches.top * 96, widthPixels: link.widthPixels * geometry.printScale, heightPixels: link.heightPixels * geometry.printScale })));
     pages.push(bytes);
   }
+  for (const link of internalLinks) link.targetTopPixels = targetTops.get(`${link.targetPageIndex}:${link.targetId}`) ?? 0;
   return { pdf: await mergePdfPages(pages, internalLinks), layoutDiagnostics: null };
 }
 

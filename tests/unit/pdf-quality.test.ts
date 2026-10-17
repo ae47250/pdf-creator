@@ -1,6 +1,6 @@
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, PDFName, PDFString, PDFHexString } from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
-import { finalizeAndValidatePdf } from '@/lib/pdf/pdf-quality';
+import { finalizeAndValidatePdf, mergePdfPages } from '@/lib/pdf/pdf-quality';
 import { PdfServiceError } from '@/lib/pdf/errors';
 
 const request = {
@@ -50,4 +50,19 @@ describe('PDF quality', () => {
     await expect(finalizeAndValidatePdf(await onePage(), mismatch, 'test', 0, request.html))
       .rejects.toMatchObject({ code: 'expected_page_count_mismatch' });
   });
+  it.each([['en', 'en', 'en'], ['en', 'fr', undefined], [undefined, undefined, undefined], ['en', undefined, 'en']])(
+    'preserves only an unambiguous source language (%s, %s)', async (first, second, expected) => {
+      const sources = await Promise.all([first, second].map(async (language, index) => {
+        const pdf = await PDFDocument.create(); pdf.addPage([612, 792]);
+        if (language) pdf.catalog.set(PDFName.of('Lang'), index ? PDFHexString.fromText(language) : PDFString.of(language));
+        return pdf.save();
+      }));
+      const merged = await PDFDocument.load(await mergePdfPages(sources));
+      const language = merged.catalog.lookup(PDFName.of('Lang'));
+      expect(language instanceof PDFString ? language.decodeText() : undefined).toBe(expected);
+      expect(merged.getPageCount()).toBe(2);
+      expect(merged.catalog.has(PDFName.of('MarkInfo'))).toBe(false);
+    }
+  );
+
 });

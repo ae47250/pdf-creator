@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { PDFArray, PDFDocument, PDFName, PDFNull } from 'pdf-lib';
+import { PDFArray, PDFDocument, PDFName, PDFNull, PDFString, PDFHexString } from 'pdf-lib';
 import { PdfServiceError } from './errors';
 import { LIMITS, PAGE_POINTS } from './limits';
 import type { PageDimension, PdfCreationRequest, PdfMetadata, RenderResult } from './types';
@@ -90,11 +90,15 @@ export async function mergePdfPages(
   internalLinks: InternalPdfLink[] = []
 ): Promise<Uint8Array> {
   const merged = await PDFDocument.create();
+  const languages = new Set<string>();
   for (const bytes of documents) {
     const source = await PDFDocument.load(bytes, { updateMetadata: false });
+    const language = source.catalog.lookup(PDFName.of('Lang'));
+    if (language instanceof PDFString || language instanceof PDFHexString) languages.add(language.decodeText());
     const pages = await merged.copyPages(source, source.getPageIndices());
     for (const page of pages) merged.addPage(page);
   }
+  if (languages.size === 1) merged.catalog.set(PDFName.of('Lang'), PDFString.of([...languages][0]));
   addInternalLinks(merged, internalLinks);
   return merged.save({ useObjectStreams: true });
 }
