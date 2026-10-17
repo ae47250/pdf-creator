@@ -44,4 +44,20 @@ describe('HTML safety', () => {
     const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
     expect(validateAndNormalizeHtml(document(`<img src="${png}" alt="pixel">`), page).imageCount).toBe(1);
   });
+  it('enforces request geometry in named, pseudo and nested page rules while keeping margin boxes', () => {
+    const safe = validateAndNormalizeHtml(document('<p>Policy</p>',
+      '@page chapter:first{size:A4 landscape!important;margin:2in!important;page-orientation:rotate-left;@top-center{content:"Heading"}}@media print{@page{margin-left:1in!important}}'), page);
+    expect(safe.html).not.toContain('rotate-left');
+    expect(safe.html).not.toContain('size:A4');
+    expect(safe.html).not.toContain('margin-left:1in');
+    expect(safe.html.match(/size:Letter portrait!important/g)).toHaveLength(2);
+    expect(safe.html.match(/margin:0in 0in 0in 0in!important/g)).toHaveLength(2);
+    expect(safe.html).toContain('@top-center{content:"Heading"}');
+  });
+
+  it('validates source URLs before normalizing page declarations', () => {
+    expect(() => validateAndNormalizeHtml(document('<p>Policy</p>',
+      '@page{size:url(https://example.com/leak)}'), page)).toThrow(PdfServiceError);
+  });
+
 });

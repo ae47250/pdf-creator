@@ -89,6 +89,7 @@ export function validateAndNormalizeHtml(html: string, page: PageSettings): Safe
       if (tag === 'style') {
         const css = (node.childNodes ?? []).map((child) => child.value ?? '').join('');
         cssRuleCount += validateCss(css, 'stylesheet');
+        node.childNodes = [{ nodeName: '#text', value: normalizePageRules(css, page) }];
       }
       if (!['html', 'head', 'body', 'meta', 'style', 'title'].includes(tag)) hasRenderableContent = true;
     }
@@ -114,6 +115,22 @@ export function validateAndNormalizeHtml(html: string, page: PageSettings): Safe
   head.childNodes.push(makeElement('style', [], [{ nodeName: '#text', value: finalPageRule }]));
 
   return { html: serialize(document as unknown as DefaultTreeAdapterMap['parentNode']), markerCount, imageCount, cssRuleCount, domElementCount };
+}
+
+// Request settings govern every page, including named and pseudo-page rules.
+// Validate the original CSS first so normalization cannot conceal unsafe URLs.
+function normalizePageRules(css: string, page: PageSettings): string {
+  const ast = csstree.parse(css, { context: 'stylesheet' });
+  const policy = `size:${page.format} ${page.orientation}!important;margin:${page.marginsInches.top}in ${page.marginsInches.right}in ${page.marginsInches.bottom}in ${page.marginsInches.left}in!important;page-orientation:upright!important`;
+  csstree.walk(ast, (node) => {
+    if (node.type !== 'Atrule' || node.name.toLowerCase() !== 'page' || !node.block) return;
+    node.block.children.forEach((child, item, list) => {
+      if (child.type === 'Declaration' && /^(size|margin(?:-.*)?|page-orientation)$/i.test(child.property)) list.remove(item);
+    });
+    const declarations = csstree.parse(policy, { context: 'declarationList' });
+    if (declarations.type === 'DeclarationList') node.block.children.appendList(declarations.children);
+  });
+  return csstree.generate(ast);
 }
 
 function collectProhibitedElements(root: HtmlNode): string[] {
