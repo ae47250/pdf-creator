@@ -30,7 +30,10 @@
       "font": {
         "family": "Open Sans",
         "distributionVersion": "Google Fonts v44 Latin variable WOFF2",
-        "weights": [400, 700],
+        "weights": [
+          400,
+          700
+        ],
         "sha256": "d8e4fe0452aa2076429a9bb5d8757d00a994dd95986cf950e9a1a371b9a072a0",
         "bytes": 48320,
         "license": "SIL Open Font License 1.1"
@@ -41,6 +44,25 @@
         "No clipping, unexpected content, caller sentinel, or external font request is present.",
         "Required text, one-page geometry, and metadata are present in the candidate PDF.",
         "Three local A-BASIC-01 repeatability rasters match the reviewed candidate exactly."
+      ]
+    },
+    {
+      "id": "A-BASIC-01-html-page-settings",
+      "reviewedAt": "2026-10-18",
+      "reviewedBy": "Codex under explicit user authorization to update baselines for honored HTML @page rules",
+      "reason": "Honor the immutable fixture @page margin:.5in instead of request margin:0.",
+      "candidateArtifact": "test-artifacts/pdf-quality-audit/pr-a-local-vitest-96063-1792350370138/visual/A-BASIC-01-p1.png",
+      "serviceCommit": "feat/html-page-settings-win (working tree based on 877e07a)",
+      "operatingSystem": "macOS",
+      "browser": "Google Chrome 155.0.8059.80",
+      "poppler": "26.09.0",
+      "resolutionDpi": 120,
+      "fixtureSha256": "9368e98a179d33925abc062e997c5ecc1de5a74e7d1d1af0576e1f91f382cbc3",
+      "imageSha256": "b54bba3cb3de40c1184ef0c1aa5cd7ceb40b2ecd49aa31e95d77afcb27639da4",
+      "reviewChecks": [
+        "Full page inspected at original raster resolution.",
+        "Text is unchanged and shifted by the HTML half-inch margin; no clipping or missing content.",
+        "Only A-BASIC-01-p1 is replaced. Existing user-supplied reviews remain historical evidence."
       ]
     }
   ],
@@ -78,11 +100,11 @@
     {
       "id": "A-BASIC-01-p1",
       "path": "tests/quality-audit/references/A-BASIC-01-p1.png",
-      "sha256": "7cae94affafb3eebf7be7e32a6379b554bf01a7e96a4bee71334071dd9172ea0",
-      "bytes": 14375,
+      "sha256": "b54bba3cb3de40c1184ef0c1aa5cd7ceb40b2ecd49aa31e95d77afcb27639da4",
+      "bytes": 14377,
       "fixtureSha256": "9368e98a179d33925abc062e997c5ecc1de5a74e7d1d1af0576e1f91f382cbc3",
       "status": "approved",
-      "reviewNotes": "One Letter portrait page from the user-approved Open Sans v44 pinned WOFF2 fixture. Heading and paragraph are present, ordered, legible, unwrapped, and inside page bounds; no clipping, caller sentinel, or runtime font request is present."
+      "reviewNotes": "HTML-page-settings precedence: the unchanged fixture specifies .5in margins. Complete page inspected at original 120 dpi; heading and paragraph retain typography and move inward by 36pt. No clipping or missing content. This replaces only the old request-zero-margin reference."
     },
     {
       "id": "A-ASSET-01-p1",

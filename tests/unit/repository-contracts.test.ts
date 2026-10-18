@@ -31,7 +31,8 @@ describe('repository contracts', () => {
 
   it('keeps the shared caller contract application-neutral and explicit', async () => {
     const contract = await readFile(new URL('../../docs/CALLER_CONTRACT.md', import.meta.url), 'utf8');
-    expect(contract).toContain('Mixed page orientation is unsupported');
+    expect(contract).toContain('including mixed sizes and orientations');
+    expect(contract).toContain('Request page settings are fallbacks');
     expect(contract).toContain('must embed and pin');
     expect(contract).toContain('must not contain HTML, credentials, personal information');
     expect(contract).toContain('Application-specific CSS stays in the caller');

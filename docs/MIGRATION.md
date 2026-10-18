@@ -10,7 +10,7 @@ Calling applications continue to own calculations, facts, HTML, CSS, fonts, logo
 - Remove scripts and all runtime construction or loading.
 - Use HTTPS citation links.
 - Add non-nested `data-pdf-page` to every intended fixed page. Do not depend on `.sheet` or another application class for service behavior.
-- Use the same format, orientation, and margins in application layout tests that are sent in the API envelope.
+- Treat API format, orientation, and margins as fallbacks. HTML `@page` declarations now win, including individual margins, named pages, pseudo-pages, and margin-box headers/footers. Recheck pagination and links if the HTML previously disagreed with the request. Flowing documents may mix sizes/orientations; fixed-page documents must have uniform size and margins (otherwise 422). HTML-defined page sides must be 1–17 inches.
 
 ## Rollout
 

@@ -8,7 +8,11 @@ paths:
     post:
       operationId: createPdf
       description: >-
-        Converts one completed self-contained HTML document into one PDF. Stored
+        Converts one completed self-contained HTML document into one PDF. HTML @page
+        declarations take precedence; request page settings fill unspecified properties.
+        Flowing documents support mixed sizes and orientations; fixed-page documents
+        require uniform size and margins. HTML-defined page sides must be 1–17 inches.
+        pageDimensions reports every distinct size actually produced. Stored
         requests require a caller-generated idempotencyKey. Reusing that key with
         the same semantic payload returns the original report; reusing it with a
         different semantic payload returns 409 idempotency_conflict. Direct

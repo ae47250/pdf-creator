@@ -45,6 +45,8 @@ if (!response.ok) throw new Error(JSON.stringify(await response.json()));
 const pdf = Buffer.from(await response.arrayBuffer());
 ```
 
+HTML `@page` rules govern page size, orientation, and each margin; request page settings fill in only what the HTML leaves unspecified. Flowing documents support named and pseudo-pages with mixed sizes/orientations. Fixed-page documents require uniform page size and margins (mixed geometry returns 422). HTML-defined page sides must be 1–17 inches, and `pageDimensions` reports every distinct output size. Margin-box headers and footers are preserved.
+
 `expectedPageCount` is an exact assertion. Use it for fixed-page or deliberately paginated output; natural-flow callers should normally omit it unless the application requires an exact count.
 
 The service can reject a request before rendering with `429 renderer_busy` and `Retry-After: 1`. Calling applications must follow the [shared caller contract](docs/CALLER_CONTRACT.md) and the bounded rollout procedure in [Migration](docs/MIGRATION.md). A `429 rate_limited` response uses `Retry-After: 60` and should be returned to the user rather than held open. Production remains limited to 10 accepted render requests per caller per 60 seconds; Preview may use 30 only for controlled verification.

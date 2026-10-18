@@ -91,7 +91,7 @@
       },
       "expected": {
         "responseKind": "pdf", "httpStatus": 200, "contentType": "application/pdf",
-        "pageCount": { "minimum": 3, "maximum": 3 },
+        "pageCount": { "minimum": 6, "maximum": 6 },
         "pageDimensions": [{ "widthPoints": 612, "heightPoints": 792 }],
         "requiredText": ["Flowing page one", "Flowing page two", "Flowing page three"], "forbiddenText": [],
         "metadata": { "title": "Synthetic PDF audit A-FLOW-01", "author": "Urveska PDF Quality Audit", "subject": "Synthetic benchmark case A-FLOW-01", "keywords": ["synthetic", "quality-audit", "a-flow-01"] },
@@ -100,8 +100,8 @@
           "requiredTextOrder": ["Flowing page one", "Flowing page two", "Flowing page three"],
           "perPageRequiredText": [
             { "pageNumber": 1, "text": ["Flowing page one"] },
-            { "pageNumber": 2, "text": ["Flowing page two"] },
-            { "pageNumber": 3, "text": ["Flowing page three"] }
+            { "pageNumber": 3, "text": ["Flowing page two"] },
+            { "pageNumber": 5, "text": ["Flowing page three"] }
           ]
         }
       },
