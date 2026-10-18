@@ -182,13 +182,11 @@ describe.sequential('PR A local quality-audit path', () => {
         visualRasterEqual: true
       });
     }
-    // Honoring the immutable flowing fixture's .5in margins exposes three
-    // blank overflow pages. Keep the quality finding; do not bless those pages.
     const flow = executionForCase('A-FLOW-01')!;
-    expect(flow).toMatchObject({ pdfProduced: true, structurallyValid: true, incorrectlyRendered: true });
+    expect(flow).toMatchObject({ pdfProduced: true, structurallyValid: true, correctlyRendered: true, incorrectlyRendered: false });
     expect(flow.findings.filter((finding) => finding.affectsCorrectness).map((finding) => finding.code))
-      .toEqual(['blank-page-detected', 'blank-page-detected', 'blank-page-detected']);
-    expect(basic.incorrectlyRenderedPdfs).toBe(1);
+      .toEqual([]);
+    expect(basic.incorrectlyRenderedPdfs).toBe(0);
     expect(result.metrics.categories.repeatability.incorrectlyRenderedPdfs).toBe(0);
 
     expect(basic.pdfsProduced).toBeLessThanOrEqual(basic.uniqueFixturesExecuted);

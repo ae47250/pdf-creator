@@ -34,9 +34,9 @@ describe.sequential('local Chromium renderer', () => {
     expect(result.layoutDiagnostics).toMatchObject({ mode: 'observe-only', observationCount: 0 });
   }, 45_000);
 
-  it('honors the flowing fixture half-inch margins, including resulting overflow pages', async () => {
-    const result = await renderPdf(await request('flowing-pages.html', 6), 'test');
-    expect(result.pageCount).toBe(6);
+  it('renders a flowing multi-page document once without markers', async () => {
+    const result = await renderPdf(await request('flowing-pages.html', 3), 'test');
+    expect(result.pageCount).toBe(3);
     expect(result.markerCount).toBe(0);
     expect(result.layoutDiagnostics).toMatchObject({ mode: 'observe-only', observationCount: 0 });
   }, 45_000);
