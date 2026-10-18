@@ -82,7 +82,7 @@
       "category": "supported-basic-pdf",
       "capabilityIds": ["pdf.pagination.flow", "pdf.text.order", "pdf.geometry.letter"],
       "expectedClass": "supported-and-expected-to-pass",
-      "source": { "path": "tests/fixtures/flowing-pages.html", "sha256": "0dfb321f4f9f7f0f0a38828f3c6f668d53f1cbc916be0f0aa26af355ace2283d" },
+      "source": { "path": "tests/fixtures/flowing-pages.html", "sha256": "70c03d905b1e493a079a7064702f859d6d740b1791c9ac4afeebaece3c060a0f" },
       "request": {
         "filename": "A_FLOW_01.pdf", "storeResult": false, "storeHtml": false,
         "page": { "format": "Letter", "orientation": "portrait", "marginsInches": { "top": 0, "right": 0, "bottom": 0, "left": 0 } },

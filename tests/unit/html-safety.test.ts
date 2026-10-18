@@ -44,14 +44,14 @@ describe('HTML safety', () => {
     const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
     expect(validateAndNormalizeHtml(document(`<img src="${png}" alt="pixel">`), page).imageCount).toBe(1);
   });
-  it('enforces request geometry in named, pseudo and nested page rules while keeping margin boxes', () => {
+  it('preserves author geometry in named, pseudo and nested page rules after the fallback', () => {
     const safe = validateAndNormalizeHtml(document('<p>Policy</p>',
       '@page chapter:first{size:A4 landscape!important;margin:2in!important;page-orientation:rotate-left;@top-center{content:"Heading"}}@media print{@page{margin-left:1in!important}}'), page);
-    expect(safe.html).not.toContain('rotate-left');
-    expect(safe.html).not.toContain('size:A4');
-    expect(safe.html).not.toContain('margin-left:1in');
-    expect(safe.html.match(/size:Letter portrait!important/g)).toHaveLength(2);
-    expect(safe.html.match(/margin:0in 0in 0in 0in!important/g)).toHaveLength(2);
+    expect(safe.html).toContain('page-orientation:rotate-left');
+    expect(safe.html).toContain('size:A4 landscape!important');
+    expect(safe.html).toContain('margin-left:1in!important');
+    expect(safe.hasPageSize).toBe(true);
+    expect(safe.html.indexOf('@layer{@page{size:Letter portrait')).toBeLessThan(safe.html.indexOf('@page chapter:first'));
     expect(safe.html).toContain('@top-center{content:"Heading"}');
   });
 

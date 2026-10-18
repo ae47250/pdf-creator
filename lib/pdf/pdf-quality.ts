@@ -9,7 +9,8 @@ export async function finalizeAndValidatePdf(
   request: PdfCreationRequest,
   caller: string,
   markerCount: number,
-  renderedHtml: string
+  renderedHtml: string,
+  hasPageSize = false
 ): Promise<Omit<RenderResult, 'renderer' | 'layoutDiagnostics'>> {
   if (input.byteLength < 5 || new TextDecoder().decode(input.subarray(0, 5)) !== '%PDF-') {
     throw new PdfServiceError('pdf_invalid', 500, 'The renderer did not create a valid PDF.');
@@ -48,7 +49,10 @@ export async function finalizeAndValidatePdf(
   const pageDimensions: PageDimension[] = [];
   for (const page of document.getPages()) {
     const { width, height } = page.getSize();
-    if (Math.abs(width - expectedWidth) > 1 || Math.abs(height - expectedHeight) > 1) {
+    if (hasPageSize && [width, height].some((side) => side < LIMITS.pageSideMinPoints || side > LIMITS.pageSideMaxPoints)) {
+      throw new PdfServiceError('pdf_invalid', 422, 'Every PDF page side must be between 1 and 17 inches (72–1224 pt).');
+    }
+    if (!hasPageSize && (Math.abs(width - expectedWidth) > 1 || Math.abs(height - expectedHeight) > 1)) {
       throw new PdfServiceError('pdf_invalid', 500, 'A PDF page does not match the requested dimensions.');
     }
     const rounded = { widthPoints: round(width), heightPoints: round(height) };
@@ -83,6 +87,7 @@ export interface InternalPdfLink {
   widthPixels: number;
   heightPixels: number;
   targetTopPixels: number;
+  targetLeftPixels?: number;
 }
 
 export async function mergePdfPages(
@@ -125,7 +130,7 @@ function addInternalLinks(document: PDFDocument, links: InternalPdfLink[]): void
     const destination = document.context.obj([
       target.ref,
       PDFName.of('XYZ'),
-      PDFNull,
+      link.targetLeftPixels === undefined ? PDFNull : clamp(points(link.targetLeftPixels), 0, target.getWidth()),
       clamp(targetHeight - points(link.targetTopPixels), 0, targetHeight),
       PDFNull
     ]);

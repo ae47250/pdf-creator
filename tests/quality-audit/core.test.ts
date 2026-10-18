@@ -138,18 +138,24 @@ describe.sequential('PR A local quality-audit path', () => {
         correctlyRendered: true,
         incorrectlyRendered: false
       });
-      expect(execution.findings.find((finding) => finding.code === 'visual-reference-mismatch'))
-        .toMatchObject({ severity: 'informational', affectsCorrectness: false });
-      const visualEvidence = execution.evidence.visualCorrectness as Record<string, unknown>;
-      expect(visualEvidence).toMatchObject({
-        referenceId,
-        exactMatch: false,
-        humanVisualReview: {
-          source: 'user-supplied',
-          disposition: 'no-visible-defect',
-          candidateSha256: visualEvidence.candidateSha256
-        }
-      });
+      if (caseId === 'A-BASIC-01') {
+        // Its HTML half-inch margins now determine the reviewed reference.
+        expect(execution.evidence.visualCorrectness).toMatchObject({ referenceId, exactMatch: true });
+        expect(execution.findings.some((finding) => finding.code === 'visual-reference-mismatch')).toBe(false);
+      } else {
+        expect(execution.findings.find((finding) => finding.code === 'visual-reference-mismatch'))
+          .toMatchObject({ severity: 'informational', affectsCorrectness: false });
+        const visualEvidence = execution.evidence.visualCorrectness as Record<string, unknown>;
+        expect(visualEvidence).toMatchObject({
+          referenceId,
+          exactMatch: false,
+          humanVisualReview: {
+            source: 'user-supplied',
+            disposition: 'no-visible-defect',
+            candidateSha256: visualEvidence.candidateSha256
+          }
+        });
+      }
     }
 
     const textExecution = executionForCase('A-TEXT-01')!;
@@ -176,6 +182,10 @@ describe.sequential('PR A local quality-audit path', () => {
         visualRasterEqual: true
       });
     }
+    const flow = executionForCase('A-FLOW-01')!;
+    expect(flow).toMatchObject({ pdfProduced: true, structurallyValid: true, correctlyRendered: true, incorrectlyRendered: false });
+    expect(flow.findings.filter((finding) => finding.affectsCorrectness).map((finding) => finding.code))
+      .toEqual([]);
     expect(basic.incorrectlyRenderedPdfs).toBe(0);
     expect(result.metrics.categories.repeatability.incorrectlyRenderedPdfs).toBe(0);
 

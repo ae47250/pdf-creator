@@ -3,9 +3,10 @@ import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { posix } from 'node:path';
 import puppeteer, { type Browser, type Page } from 'puppeteer-core';
+import { PDFArray, PDFDict, PDFDocument, PDFName, PDFString } from 'pdf-lib';
 import { PdfServiceError } from './errors';
 import { validateAndNormalizeHtml } from './html-safety';
-import { LIMITS, PAGE_POINTS } from './limits';
+import { LIMITS } from './limits';
 import {
   countPdfPages,
   finalizeAndValidatePdf,
@@ -15,7 +16,6 @@ import {
 import type {
   FlowLayoutDiagnostics,
   FlowLayoutObservation,
-  PageSettings,
   PdfCreationRequest,
   RendererIdentity,
   RenderResult
@@ -56,7 +56,7 @@ export async function renderPdf(request: PdfCreationRequest, caller: string): Pr
       'render_timeout',
       'PDF rendering exceeded the time limit.'
     );
-    const validated = await finalizeAndValidatePdf(rendered.pdf, request, caller, safe.markerCount, safe.html);
+    const validated = await finalizeAndValidatePdf(rendered.pdf, request, caller, safe.markerCount, safe.html, safe.hasPageSize);
     return { ...validated, renderer, layoutDiagnostics: rendered.layoutDiagnostics };
   } catch (error) {
     originalError = error;
@@ -193,7 +193,9 @@ async function renderWholeDocument(
   request: PdfCreationRequest
 ): Promise<{ pdf: Uint8Array; layoutDiagnostics: FlowLayoutDiagnostics }> {
   await loadAndWait(page, html);
-  const layoutDiagnostics = await observeFlowLayout(page, request.page);
+  const [geometry] = await measurePrintGeometry(page, request, false);
+  await loadAndWait(page, html);
+  const layoutDiagnostics = await observeFlowLayout(page, geometry.printableWidthPixels);
   return { pdf: await page.pdf(pdfOptions(request)), layoutDiagnostics };
 }
 
@@ -205,11 +207,17 @@ async function renderFixedPages(
 ): Promise<{ pdf: Uint8Array; layoutDiagnostics: null }> {
   const pages: Uint8Array[] = [];
   const internalLinks: (InternalPdfLink & { targetId: string })[] = [];
-  const targetTops = new Map<string, number>();
-  const paper = PAGE_POINTS[request.page.format];
-  const width = request.page.orientation === 'portrait' ? paper.widthPoints : paper.heightPoints;
-  // Match print layout before measuring responsive content or transforms.
-  await page.setViewport({ ...page.viewport()!, width: Math.round((width / 72 - request.page.marginsInches.left - request.page.marginsInches.right) * 96) });
+  const targetPoints = new Map<string, { leftPixels: number; topPixels: number }>();
+  await loadAndWait(page, html);
+  const geometries = await measurePrintGeometry(page, request, true);
+  const paper = geometries[0];
+  if (geometries.length !== markerCount || geometries.some((geometry) =>
+    Object.keys(paper).some((key) => Math.abs(geometry[key as keyof PrintGeometry] - paper[key as keyof PrintGeometry]) > 0.01)
+  )) {
+    throw new PdfServiceError('pdf_invalid', 422, 'Fixed-page documents must use the same page size and margins on every page; mixed page sizes or margins are not supported.');
+  }
+  // Match Chromium's resolved printable area before measuring content and links.
+  await page.setViewport({ ...page.viewport()!, width: Math.max(1, Math.round(paper.printableWidthPixels)) });
   for (let index = 0; index < markerCount; index += 1) {
     await loadAndWait(page, html);
     const geometry = await page.evaluate((selectedIndex) => {
@@ -242,7 +250,7 @@ async function renderFixedPages(
         widthPixels: rect.width, heightPixels: rect.height, targetTopPixels: 0
       })));
       const targets = [selected, ...selected.querySelectorAll<HTMLElement>('[id]')]
-        .filter(element => element.id).map(element => ({ id: element.id, top: element.getBoundingClientRect().top }));
+        .filter(element => element.id).map(element => ({ id: element.id, top: element.getBoundingClientRect().top, left: element.getBoundingClientRect().left }));
       const box = selected.getBoundingClientRect();
       let left = box.left;
       let top = box.top;
@@ -267,27 +275,111 @@ async function renderFixedPages(
     if (await countPdfPages(bytes) !== 1) {
       throw new PdfServiceError('fixed_page_overflow', 422, `Fixed page ${index + 1} did not render as exactly one PDF page.`);
     }
-    for (const target of geometry.targets) targetTops.set(`${index}:${target.id}`, target.top * geometry.printScale + request.page.marginsInches.top * 96);
-    internalLinks.push(...geometry.internalLinks.map(link => ({ ...link, leftPixels: link.leftPixels * geometry.printScale + request.page.marginsInches.left * 96, topPixels: link.topPixels * geometry.printScale + request.page.marginsInches.top * 96, widthPixels: link.widthPixels * geometry.printScale, heightPixels: link.heightPixels * geometry.printScale })));
+    for (const target of geometry.targets) {
+      targetPoints.set(`${index}:${target.id}`, printPoint(paper, target.left * geometry.printScale, target.top * geometry.printScale));
+    }
+    internalLinks.push(...geometry.internalLinks.map((link) => {
+      const start = printPoint(paper, link.leftPixels * geometry.printScale, link.topPixels * geometry.printScale);
+      const end = printPoint(paper, (link.leftPixels + link.widthPixels) * geometry.printScale, (link.topPixels + link.heightPixels) * geometry.printScale);
+      return { ...link, leftPixels: Math.min(start.leftPixels, end.leftPixels), topPixels: Math.min(start.topPixels, end.topPixels),
+        widthPixels: Math.abs(end.leftPixels - start.leftPixels), heightPixels: Math.abs(end.topPixels - start.topPixels) };
+    }));
     pages.push(bytes);
   }
-  for (const link of internalLinks) link.targetTopPixels = targetTops.get(`${link.targetPageIndex}:${link.targetId}`) ?? 0;
+  for (const link of internalLinks) {
+    const target = targetPoints.get(`${link.targetPageIndex}:${link.targetId}`);
+    link.targetTopPixels = target?.topPixels ?? 0;
+    if (paper.rotation) link.targetLeftPixels = target?.leftPixels;
+  }
   return { pdf: await mergePdfPages(pages, internalLinks), layoutDiagnostics: null };
 }
 
-async function observeFlowLayout(page: Page, settings: PageSettings): Promise<FlowLayoutDiagnostics> {
-  const pageWidthInches = settings.format === 'Letter' || settings.format === 'Legal' ? 8.5 : 8.267;
-  const physicalWidthInches = settings.orientation === 'portrait'
-    ? pageWidthInches
-    : settings.format === 'Letter'
-      ? 11
-      : settings.format === 'Legal'
-        ? 14
-        : 11.69;
-  const printableWidthPixels = Math.max(
-    1,
-    Math.round((physicalWidthInches - settings.marginsInches.left - settings.marginsInches.right) * 96)
-  );
+interface PrintGeometry {
+  widthPoints: number;
+  heightPoints: number;
+  leftPixels: number;
+  topPixels: number;
+  printableWidthPixels: number;
+  printableHeightPixels: number;
+  rotation: number;
+}
+
+function printPoint(paper: PrintGeometry, x: number, y: number) {
+  if (paper.rotation === -1) return { leftPixels: paper.leftPixels + y, topPixels: paper.topPixels + paper.printableWidthPixels - x };
+  if (paper.rotation === 1) return { leftPixels: paper.leftPixels + paper.printableHeightPixels - y, topPixels: paper.topPixels + x };
+  return { leftPixels: paper.leftPixels + x, topPixels: paper.topPixels + y };
+}
+
+// Print a disposable measuring document with the original styles. A full-area link
+// and an origin marker expose geometry after Chromium resolves page rules, including
+// named pages, pseudo-pages, layers, conditional rules, units, and !important.
+// The caller reloads the unchanged safe HTML before rendering the actual content.
+async function measurePrintGeometry(page: Page, request: PdfCreationRequest, fixed: boolean): Promise<PrintGeometry[]> {
+  await page.evaluate((isFixed) => {
+    const markers = Array.from(document.querySelectorAll<HTMLElement>('[data-pdf-page]'));
+    const firstContent = Array.from(document.body.querySelectorAll<HTMLElement>('*')).find((element) =>
+      getComputedStyle(element).display !== 'none' && element.getBoundingClientRect().height > 0
+    );
+    const names = (isFixed ? markers : [firstContent ?? document.body]).map((element) => getComputedStyle(element).page);
+    // Preserve style elements even when callers put them in the body.
+    for (const style of document.body.querySelectorAll('style')) document.head.append(style);
+    document.body.replaceChildren();
+    for (const element of [document.documentElement, document.body]) {
+      for (const [property, value] of Object.entries({
+        display: 'block', position: 'static', width: 'auto', height: '100%',
+        margin: '0', padding: '0', border: '0', transform: 'none',
+        'min-width': '0', 'max-width': 'none', 'min-height': '0', 'max-height': 'none',
+        overflow: 'visible', 'box-sizing': 'content-box'
+      })) element.style.setProperty(property, value, 'important');
+    }
+    names.forEach((name, index) => {
+      const area = document.createElement('div');
+      area.style.cssText = 'all:initial!important;display:block!important;position:relative!important;width:100%!important;height:100%!important;break-after:page!important;';
+      area.style.setProperty('page', name, 'important');
+      const bounds = document.createElement('a');
+      bounds.href = `https://pdf.invalid/geometry/${index}`;
+      bounds.style.cssText = 'all:initial!important;display:block!important;width:100%!important;height:100%!important;';
+      const origin = document.createElement('a');
+      origin.href = `https://pdf.invalid/origin/${index}`;
+      origin.style.cssText = 'all:initial!important;position:absolute!important;left:0!important;top:0!important;width:1px!important;height:1px!important;';
+      area.append(bounds, origin);
+      document.body.append(area);
+    });
+  }, fixed);
+  const probe = await PDFDocument.load(await page.pdf(pdfOptions(request)), { updateMetadata: false });
+  return probe.getPages().map((printedPage) => {
+    const annotations = printedPage.node.lookupMaybe(PDFName.of('Annots'), PDFArray);
+    const rectangles = new Map<string, number[]>();
+    for (let index = 0; index < (annotations?.size() ?? 0); index += 1) {
+      const annotation = annotations!.lookup(index, PDFDict);
+      const action = annotation.lookupMaybe(PDFName.of('A'), PDFDict);
+      const uri = action?.lookupMaybe(PDFName.of('URI'), PDFString)?.decodeText();
+      if (!uri) continue;
+      rectangles.set(uri, annotation.lookup(PDFName.of('Rect'), PDFArray).asArray().map((value) => Number(value.toString())));
+    }
+    for (const [uri, rect] of rectangles) {
+      if (!uri.startsWith('https://pdf.invalid/geometry/')) continue;
+      const origin = rectangles.get(uri.replace('/geometry/', '/origin/'));
+      if (!origin) continue;
+      // Locate the unrotated top-left corner to distinguish upright and rotated
+      // page boxes. This also keeps links correct for CSS page-orientation.
+      const rotation = origin[3] < (rect[1] + rect[3]) / 2 ? -1 : origin[0] > (rect[0] + rect[2]) / 2 ? 1 : 0;
+      const width = (rect[2] - rect[0]) / 0.75;
+      const height = (rect[3] - rect[1]) / 0.75;
+      return {
+        widthPoints: printedPage.getWidth(), heightPoints: printedPage.getHeight(),
+        leftPixels: rect[0] / 0.75, topPixels: (printedPage.getHeight() - rect[3]) / 0.75,
+        printableWidthPixels: rotation ? height : width,
+        printableHeightPixels: rotation ? width : height,
+        rotation
+      };
+    }
+    throw new PdfServiceError('pdf_invalid', 422, 'The HTML page size and margins must leave a printable area.');
+  });
+}
+
+async function observeFlowLayout(page: Page, widthPixels: number): Promise<FlowLayoutDiagnostics> {
+  const printableWidthPixels = Math.max(1, Math.round(widthPixels));
   const originalViewport = page.viewport()!;
 
   await page.setViewport({ ...originalViewport, width: printableWidthPixels });

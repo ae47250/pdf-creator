@@ -3,6 +3,8 @@ export const LIMITS = Object.freeze({
   htmlBytes: 3_500_000,
   pdfBytes: 4_000_000,
   pages: 25,
+  pageSideMinPoints: 72,
+  pageSideMaxPoints: 1224,
   domElements: 10_000,
   domDepth: 64,
   cssRules: 2_000,

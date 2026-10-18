@@ -137,9 +137,9 @@ export default function ConsoleForm({ appABaseline }: { appABaseline: string }) 
       <section className="panel wide controls">
         <h2>PDF settings</h2>
         <label>Filename<input value={filename} onChange={(event) => setFilename(event.target.value)} /></label>
-        <label>Page format<select value={format} onChange={(event) => setFormat(event.target.value)}><option>Letter</option><option>A4</option><option>Legal</option></select></label>
-        <label>Orientation<select value={orientation} onChange={(event) => setOrientation(event.target.value)}><option>portrait</option><option>landscape</option></select></label>
-        <label>Page margins (inches)<input type="number" min="0" max="2" step="0.05" value={marginInches} onChange={(event) => setMarginInches(event.target.value)} /></label>
+        <label>Page format (when HTML sets none)<select value={format} onChange={(event) => setFormat(event.target.value)}><option>Letter</option><option>A4</option><option>Legal</option></select></label>
+        <label>Orientation (when HTML sets none)<select value={orientation} onChange={(event) => setOrientation(event.target.value)}><option>portrait</option><option>landscape</option></select></label>
+        <label>Page margins (inches) (when HTML sets none)<input type="number" min="0" max="2" step="0.05" value={marginInches} onChange={(event) => setMarginInches(event.target.value)} /></label>
         <div>
           <label htmlFor="exact-page-count">Exact page count (optional)</label>
           <input id="exact-page-count" type="number" min="1" max="25" value={expectedPageCount} onChange={(event) => setExpectedPageCount(event.target.value)} aria-describedby="exact-page-count-help" />

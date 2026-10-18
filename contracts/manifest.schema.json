@@ -17,9 +17,10 @@
     "submittedHtmlBytes": { "type": "integer", "minimum": 1, "maximum": 3500000 },
     "submittedHtmlSha256": { "$ref": "#/$defs/sha" },
     "renderedHtmlSha256": { "$ref": "#/$defs/sha" },
-    "page": { "type": "object" },
+    "page": { "type": "object", "description": "Submitted fallback page settings; HTML @page declarations take precedence." },
     "pageCount": { "type": "integer", "minimum": 1, "maximum": 25 },
     "pageDimensions": {
+      "description": "Every distinct page size actually produced, including mixed sizes in flowing documents.",
       "type": "array",
       "minItems": 1,
       "items": {

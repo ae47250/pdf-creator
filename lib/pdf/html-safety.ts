@@ -24,6 +24,7 @@ const DATA_FONT = /^data:font\/woff2;base64,([A-Za-z0-9+/]+={0,2})$/;
 export interface SafeHtml {
   html: string;
   markerCount: number;
+  hasPageSize: boolean;
   imageCount: number;
   cssRuleCount: number;
   domElementCount: number;
@@ -48,6 +49,7 @@ export function validateAndNormalizeHtml(html: string, page: PageSettings): Safe
   let imageCount = 0;
   let cssRuleCount = 0;
   let markerCount = 0;
+  let hasPageSize = false;
   let hasRenderableContent = false;
 
   const visit = (node: HtmlNode, depth: number, insideMarker: boolean): void => {
@@ -89,7 +91,13 @@ export function validateAndNormalizeHtml(html: string, page: PageSettings): Safe
       if (tag === 'style') {
         const css = (node.childNodes ?? []).map((child) => child.value ?? '').join('');
         cssRuleCount += validateCss(css, 'stylesheet');
-        node.childNodes = [{ nodeName: '#text', value: normalizePageRules(css, page) }];
+        csstree.walk(csstree.parse(css), (rule) => {
+          if (rule.type === 'Atrule' && rule.name.toLowerCase() === 'page') {
+            rule.block?.children.forEach((child) => {
+              if (child.type === 'Declaration' && child.property.toLowerCase() === 'size') hasPageSize = true;
+            });
+          }
+        });
       }
       if (!['html', 'head', 'body', 'meta', 'style', 'title'].includes(tag)) hasRenderableContent = true;
     }
@@ -111,26 +119,11 @@ export function validateAndNormalizeHtml(html: string, page: PageSettings): Safe
     { name: 'http-equiv', value: 'Content-Security-Policy' },
     { name: 'content', value: CSP }
   ]));
-  const finalPageRule = `@page{size:${page.format} ${page.orientation};margin:${page.marginsInches.top}in ${page.marginsInches.right}in ${page.marginsInches.bottom}in ${page.marginsInches.left}in}`;
-  head.childNodes.push(makeElement('style', [], [{ nodeName: '#text', value: finalPageRule }]));
+  const fallbackPageRule = `@layer{@page{size:${page.format} ${page.orientation};margin:${page.marginsInches.top}in ${page.marginsInches.right}in ${page.marginsInches.bottom}in ${page.marginsInches.left}in}}`;
+  // The first anonymous layer loses to every author layer and unlayered rule.
+  head.childNodes.unshift(makeElement('style', [], [{ nodeName: '#text', value: fallbackPageRule }]));
 
-  return { html: serialize(document as unknown as DefaultTreeAdapterMap['parentNode']), markerCount, imageCount, cssRuleCount, domElementCount };
-}
-
-// Request settings govern every page, including named and pseudo-page rules.
-// Validate the original CSS first so normalization cannot conceal unsafe URLs.
-function normalizePageRules(css: string, page: PageSettings): string {
-  const ast = csstree.parse(css, { context: 'stylesheet' });
-  const policy = `size:${page.format} ${page.orientation}!important;margin:${page.marginsInches.top}in ${page.marginsInches.right}in ${page.marginsInches.bottom}in ${page.marginsInches.left}in!important;page-orientation:upright!important`;
-  csstree.walk(ast, (node) => {
-    if (node.type !== 'Atrule' || node.name.toLowerCase() !== 'page' || !node.block) return;
-    node.block.children.forEach((child, item, list) => {
-      if (child.type === 'Declaration' && /^(size|margin(?:-.*)?|page-orientation)$/i.test(child.property)) list.remove(item);
-    });
-    const declarations = csstree.parse(policy, { context: 'declarationList' });
-    if (declarations.type === 'DeclarationList') node.block.children.appendList(declarations.children);
-  });
-  return csstree.generate(ast);
+  return { html: serialize(document as unknown as DefaultTreeAdapterMap['parentNode']), markerCount, hasPageSize, imageCount, cssRuleCount, domElementCount };
 }
 
 function collectProhibitedElements(root: HtmlNode): string[] {

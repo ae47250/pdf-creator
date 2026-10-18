@@ -16,6 +16,7 @@
     "storeResult": { "type": "boolean" },
     "storeHtml": { "type": "boolean" },
     "page": {
+      "description": "Fallback size, orientation, and individual margins when HTML @page rules do not set them. HTML follows Chromium cascade; flowing documents may mix sizes, while fixed pages require uniform size and margins. HTML-defined page sides must be 1–17 inches.",
       "type": "object",
       "additionalProperties": false,
       "required": ["format", "orientation", "marginsInches"],
